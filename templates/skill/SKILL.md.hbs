@@ -1,41 +1,21 @@
 ---
 name: {{name}}
-version: {{version}}
 description: {{description}}
-author: {{author}}
 license: {{license}}
-tags: [{{#each tags}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}]
-category: {{category}}
-trust-level: community
-user-invocable: true
+metadata:
+  author: {{author}}
+  version: "{{version}}"
+  tags: {{#each tags}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+  category: {{category}}
 ---
 
 # {{name}}
 
-{{description}}
-
-## When to Use
-
-Activate this skill when:
-- User asks to "..." or invokes `/{{name}}`
-- Agent encounters a situation where ...
-
-Do NOT use when:
-- (list exclusions so the agent knows boundaries)
-
-## Instructions
+Step-by-step instructions for the AI agent. Be specific and actionable.
 
 1. First, ...
 2. Then, ...
 3. Finally, ...
-
-## Input Format
-
-Describe what input this skill expects (file paths, queries, etc.).
-
-## Output Format
-
-Describe what this skill produces (file changes, console output, etc.).
 
 ## Examples
 
@@ -48,8 +28,3 @@ Describe what this skill produces (file changes, console output, etc.).
 
 - List any limitations
 - Note what this skill does NOT handle
-
-## References
-
-- See `references/` for supplementary docs
-- See `scripts/` for helper scripts

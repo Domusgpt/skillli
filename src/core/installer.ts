@@ -61,7 +61,7 @@ export async function installFromGithub(
 
   const installed: InstalledSkill = {
     name: skill.metadata.name,
-    version: skill.metadata.version,
+    version: skill.metadata.version ?? '0.0.0',
     installedAt: new Date().toISOString(),
     path: installPath,
     source: 'github',
@@ -95,7 +95,7 @@ export async function installFromLocal(dirPath: string): Promise<InstalledSkill>
 
   const installed: InstalledSkill = {
     name: skill.metadata.name,
-    version: skill.metadata.version,
+    version: skill.metadata.version ?? '0.0.0',
     installedAt: new Date().toISOString(),
     path: installPath,
     source: 'local',

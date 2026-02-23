@@ -1,342 +1,199 @@
-# Skillli Skill Format Specification (2026)
+# Skill Format Specification
 
-Complete reference for authoring SKILL.md packages. Copy-paste the
-templates below and fill in your details.
+Based on the [Agent Skills open standard](https://agentskills.io/specification)
+with [Claude Code extensions](https://code.claude.com/docs/en/skills) and
+skillli registry extensions.
 
 ---
 
-## Quick Copy-Paste: Minimal SKILL.md
+## Copy-Paste: Minimal SKILL.md
 
-The simplest valid skill. Copy this, change the values, write your
-instructions in the body:
-
-```markdown
+```yaml
 ---
 name: my-skill
-version: 1.0.0
-description: Short clear description of what this skill does (10-500 chars)
-author: your-github-username
+description: What this skill does and when to use it. Include trigger keywords so agents know when to activate. Max 1024 chars, single-line string.
 license: MIT
-tags: [primary-tag, secondary-tag]
-category: development
-trust-level: community
-user-invocable: true
 ---
 
-# My Skill
-
-What this skill does in one sentence.
-
-## When to Use
-
-- User says "do X" or "/my-skill"
-- Agent encounters Y situation
-
-## Instructions
+Instructions for the agent. Be specific and actionable.
 
 1. Step one
 2. Step two
 3. Step three
-
-## Examples
-
-**Input:** "do X for file.ts"
-**Output:** Modified file.ts with X applied
 ```
+
+Only `name` and `description` are required by the open standard.
 
 ---
 
-## Quick Copy-Paste: Full SKILL.md
+## Copy-Paste: Full SKILL.md (with skillli registry fields)
 
-All optional fields and recommended body sections:
-
-```markdown
+```yaml
 ---
 name: my-skill
-version: 1.0.0
-description: Generates comprehensive unit tests for TypeScript files using vitest
-author: your-github-username
+description: Generates unit tests for TypeScript files using vitest. Use when the user asks to generate tests, add unit tests, or improve test coverage for TypeScript code.
 license: MIT
-tags: [testing, typescript, vitest, unit-tests, code-quality]
-category: development
-repository: https://github.com/you/my-skill
-homepage: https://my-skill-docs.example.com
-trust-level: community
-user-invocable: true
-disable-model-invocation: false
-min-skillli-version: 0.1.0
+compatibility: Requires Node.js >= 18 and vitest
+metadata:
+  author: your-github-name
+  version: "1.0.0"
+  tags: testing, typescript, vitest
+  category: development
+  repository: https://github.com/you/my-skill
 ---
 
-# My Skill
+# my-skill
 
-Generates comprehensive unit tests for TypeScript files. Reads source
-files, identifies exported functions and classes, and produces vitest
-test suites with edge case coverage.
+Generate vitest test suites for TypeScript files.
 
-## When to Use
-
-Activate this skill when:
-- User asks to "generate tests", "add unit tests", or "write tests"
-- User invokes `/my-skill`
-- Agent finds TypeScript files with no corresponding test files
-- User mentions "test coverage" for TypeScript code
-
-Do NOT use when:
-- Files are not TypeScript (.ts, .tsx)
-- User wants integration or e2e tests (different skill)
-
-## Instructions
-
-1. Identify the target file(s) from user input or context
-2. Read each target file completely
-3. For each exported function/class:
-   a. Determine input types, return types, and side effects
-   b. Generate test cases covering: happy path, edge cases, error cases
-   c. Use vitest `describe`/`it` blocks with clear test names
-4. Write the test file to `test/<filename>.test.ts`
-5. Run `npx vitest run <test-file>` to verify tests pass
-6. If tests fail, read the error, fix, and re-run
-
-## Input Format
-
-Accepts one of:
-- A file path: "generate tests for src/utils.ts"
-- A directory: "test everything in src/core/"
-- Implicit: agent detects untested files in context
-
-## Output Format
-
-Creates test files following this structure:
-```typescript
-import { describe, it, expect } from 'vitest';
-import { functionName } from '../src/module.js';
-
-describe('functionName', () => {
-  it('should handle normal input', () => {
-    expect(functionName('input')).toBe('expected');
-  });
-
-  it('should handle edge case', () => {
-    expect(functionName('')).toBe('default');
-  });
-});
-```
+1. Read the target file
+2. Identify exported functions and classes
+3. Generate test cases: happy path, edge cases, error cases
+4. Write to test/<filename>.test.ts
+5. Run `npx vitest run <test-file>` to verify
 
 ## Examples
 
-### Example 1: Single file
-**Input:** "generate tests for src/math.ts"
-**Action:** Read src/math.ts, find exported `add()` and `multiply()`
-**Output:** Creates test/math.test.ts with tests for both functions
-
-### Example 2: Directory
-**Input:** "add tests for src/core/"
-**Action:** Scan directory, find untested exports
-**Output:** Creates test files for each source file
+**Input:** "generate tests for src/utils.ts"
+**Output:** Creates test/utils.test.ts with passing tests
 
 ## Constraints
 
-- Only handles TypeScript (.ts, .tsx)
-- Generates vitest tests (not jest, mocha, etc.)
-- Maximum 50 test cases per file
+- TypeScript only (.ts, .tsx)
+- Generates vitest tests (not jest/mocha)
 - Does not modify source files
-
-## References
-
-- See `references/testing-patterns.md` for edge case strategies
-- Uses `scripts/check-coverage.sh` for post-run coverage check
 ```
 
 ---
 
-## SKILL.md Structure
+## Agent Skills Open Standard Fields
 
-### YAML Frontmatter
+Source: [agentskills.io/specification](https://agentskills.io/specification)
 
-Everything between the `---` markers. Parsed by gray-matter, validated
-by Zod.
+| Field | Required | Constraints |
+|-------|----------|-------------|
+| `name` | Yes | 1-64 chars. Lowercase letters, numbers, hyphens. No leading/trailing/consecutive hyphens. Must match the directory name. |
+| `description` | Yes | 1-1024 chars. What the skill does AND when to use it. Use single-line strings — multiline YAML indicators (`>-`, `\|`) may not parse correctly. |
+| `license` | No | SPDX identifier or license file reference. |
+| `compatibility` | No | 1-500 chars. Environment requirements (runtime, packages, network). |
+| `metadata` | No | Key-value map (string → string). For extensions not in the base spec. |
+| `allowed-tools` | No | Space-delimited tool list. Experimental. Example: `Bash(git:*) Read` |
 
-### Required Fields
+### Name rules
+- `code-review` — valid
+- `PDF-Processing` — invalid (uppercase)
+- `-my-skill` — invalid (leading hyphen)
+- `my--skill` — invalid (consecutive hyphens)
 
-| Field | Type | Constraints | Example |
-|-------|------|-------------|---------|
-| `name` | string | Lowercase alphanumeric + hyphens. 1-100 chars. Cannot start/end with hyphen. | `code-reviewer` |
-| `version` | string | Strict semver: `MAJOR.MINOR.PATCH` | `1.0.0` |
-| `description` | string | 10-500 characters | `"Reviews PR diffs for bugs and style"` |
-| `author` | string | Non-empty. Typically GitHub username. | `your-name` |
-| `license` | string | SPDX identifier | `MIT`, `Apache-2.0` |
-| `tags` | string[] | 1-20 tags, each 1-50 chars | `[review, security, typescript]` |
-| `category` | enum | See categories below | `development` |
+### Description tips
+- Include trigger keywords: "Use when the user asks to...", "Activate when..."
+- Be specific: "Extracts text from PDFs and fills forms" not "Helps with PDFs"
+- The description is the primary triggering mechanism — agents decide whether to load the skill based on this field alone
 
-### Optional Fields
+---
 
-| Field | Type | Default | Purpose |
-|-------|------|---------|---------|
-| `repository` | URL string | — | GitHub repo for source code |
-| `homepage` | URL string | — | Documentation website |
-| `trust-level` | enum | `community` | `community`, `verified`, `official` |
-| `user-invocable` | boolean | `true` | Allow slash-command invocation (`/<name>`) |
-| `disable-model-invocation` | boolean | `false` | Prevent agent auto-invocation |
-| `min-skillli-version` | string | — | Require minimum skillli version |
-| `checksum` | string | — | SHA-256, auto-generated on publish |
+## Claude Code Extension Fields
 
-### Categories
+These are recognized by Claude Code on top of the open standard:
 
-| Category | When to use |
+| Field | Default | Purpose |
+|-------|---------|---------|
+| `argument-hint` | — | Autocomplete hint: `[issue-number]`, `[file] [format]` |
+| `disable-model-invocation` | `false` | `true` = only user can invoke via `/name`. Removes from Claude's context entirely. |
+| `user-invocable` | `true` | `false` = hide from slash menu. Claude can still invoke. |
+| `model` | — | Force model: `claude-sonnet-4-20250514` |
+| `context` | — | `fork` = run in isolated subagent |
+| `agent` | `general-purpose` | Subagent type: `Explore`, `Plan`, `general-purpose`, or custom from `.claude/agents/` |
+| `hooks` | — | Lifecycle hooks: `PreToolUse`, `PostToolUse`, `Stop` |
+
+### Invocation control
+
+| Setting | Slash menu | Agent can invoke | Description loaded |
+|---------|-----------|-----------------|-------------------|
+| (default) | Yes | Yes | Always |
+| `disable-model-invocation: true` | Yes | No | Only when user invokes |
+| `user-invocable: false` | No | Yes | Always |
+
+### Runtime substitutions
+
+| Variable | Description |
 |----------|-------------|
-| `development` | Code generation, testing, CI/CD, debugging, refactoring, linting |
-| `creative` | Writing, design, content creation, media, storytelling |
-| `enterprise` | Business processes, compliance, reporting, workflows, legal |
-| `data` | Analytics, ETL, visualization, machine learning, data pipelines |
-| `devops` | Infrastructure, deployment, monitoring, cloud, containers |
-| `other` | Anything that doesn't fit the above |
-
-### Trust Levels
-
-| Level | Who can set it | Meaning |
-|-------|----------------|---------|
-| `community` | Anyone | Basic validation only. Users should review SKILL.md before installing. |
-| `verified` | Registry maintainers | Author identity confirmed. Additional manual review. |
-| `official` | Skillli team | First-party maintained. Highest trust. |
+| `$ARGUMENTS` | All args from `/skill-name args here` |
+| `$0`, `$1`, `$2` | Positional args by index |
+| `${CLAUDE_SESSION_ID}` | Current session ID |
+| `` !`command` `` | Shell command output injected before skill content is sent |
 
 ---
 
-## Markdown Body Best Practices
+## Skillli Registry Extensions
 
-The body after frontmatter is the actual skill instructions. Agents
-read this to know what to do.
+When publishing to the skillli registry, these fields go under `metadata`:
 
-### Recommended Sections
+| Key | Purpose |
+|-----|---------|
+| `author` | GitHub username |
+| `version` | Semver: `1.0.0` |
+| `tags` | Comma-separated: `testing, typescript` |
+| `category` | `development`, `creative`, `enterprise`, `data`, `devops`, `other` |
+| `repository` | GitHub URL |
+| `trust-level` | `community` (default), `verified`, `official` |
 
-1. **Title + summary** — One sentence, what does this skill do
-2. **When to Use** — Explicit trigger conditions. Agents use this to
-   decide whether to invoke. Be specific: list user phrases, file
-   patterns, situations.
-3. **Instructions** — Numbered steps. Specific and actionable. This is
-   the core of the skill.
-4. **Input Format** — What the skill expects to receive
-5. **Output Format** — What the skill produces (files, console, data)
-6. **Examples** — Concrete input/output pairs. Agents learn from these.
-7. **Constraints** — What the skill does NOT do. Prevents misuse.
-8. **References** — Pointers to files in `references/` or `scripts/`
-
-### Writing Tips
-
-- Write for an AI agent, not a human reading docs. Be direct and
-  imperative: "Read the file", "Generate tests", "Run the command".
-- Include specific file paths, command syntax, and output formats.
-- Use examples liberally — agents learn best from concrete examples.
-- Keep under 500 lines. If you need more, put reference material in
-  `references/` and point to it.
-- Don't use emojis unless the skill specifically needs them.
+For backwards compatibility, skillli also accepts these as top-level frontmatter fields. Top-level wins over metadata block.
 
 ---
 
-## Skill Package Directory Structure
+## Directory Structure
 
 ```
 my-skill/
-├── SKILL.md            # Required — the skill definition
-├── skillli.json        # Auto-generated manifest (created by init/publish)
-├── scripts/            # Optional — helper scripts
-│   ├── validate.sh     # Only .sh, .py, .js, .ts allowed
-│   └── transform.py
-├── references/         # Optional — reference documents
-│   ├── style-guide.md  # Supplementary docs the skill can reference
-│   └── api-spec.json
-├── assets/             # Optional — templates, configs, data
-│   └── template.hbs
-└── LICENSE             # Recommended
+├── SKILL.md          # Required — skill definition
+├── skillli.json      # Auto-generated by skillli init/publish
+├── scripts/          # Optional — executable code agents can run
+│   └── validate.sh   # Languages depend on agent (Python, Bash, JS common)
+├── references/       # Optional — docs loaded on demand
+│   └── api-spec.md   # Keep focused — agents load these independently
+├── assets/           # Optional — templates, data files, images
+└── LICENSE           # Recommended
 ```
 
-### Allowed script extensions
-Only these are permitted in `scripts/`: `.sh`, `.py`, `.js`, `.ts`
+### Progressive disclosure
 
-Any other extension causes the safeguard check to fail.
+1. **Metadata (~100 tokens):** `name` + `description` loaded at startup for all skills
+2. **Instructions (< 5000 tokens):** Full SKILL.md body loaded when activated
+3. **Resources (on demand):** Files in scripts/, references/, assets/ loaded only when needed
+
+Keep SKILL.md under 500 lines. Move detail to reference files.
 
 ---
 
-## Safeguard Checks
+## Safeguard Checks (skillli)
 
-Every skill is validated before install and publish. These checks must
-pass:
-
-| Check | Severity | What it catches |
-|-------|----------|-----------------|
+| Check | Severity | Catches |
+|-------|----------|---------|
 | Schema validation | error | Missing/malformed frontmatter |
 | Line count | warning | SKILL.md over 500 lines |
-| Prohibited patterns | error | `eval()`, `exec()`, `execSync()`, `rm -rf /`, `child_process`, `Process.kill`, hardcoded passwords/API keys, large base64 blobs |
+| Prohibited patterns | error | `eval()`, `exec()`, `rm -rf /`, `child_process`, hardcoded secrets, large base64 |
 | Script safety | error | Disallowed file extensions in scripts/ |
-| File size | warning | Package over 5MB total |
-
-Skills that fail **error**-severity checks are rejected. Warning-severity
-checks produce warnings but allow installation.
+| File size | warning | Package over 5MB |
 
 ---
 
-## Trust Score Computation (0-100)
+## Trust Score (0-100)
 
 | Factor | Points |
 |--------|--------|
-| Has repository URL | +10 |
+| Has repository | +10 |
 | Has license | +10 |
-| Trust level: verified | +15 |
-| Trust level: official | +20 |
-| Rating >= 3.5 stars | +15 |
+| Trust: verified | +15 |
+| Trust: official | +20 |
+| Rating >= 3.5 | +15 |
 | Downloads > 100 | +5 |
 | Downloads > 1000 | +10 |
 | No prohibited patterns | +20 |
-| SKILL.md under 500 lines | +15 |
-
-Maximum: 100. Recommended minimum for auto-install: 50.
-Hard minimum before warning: 30.
+| Under 500 lines | +15 |
 
 ---
 
-## CLI Reference for Authors
+## Portability
 
-```bash
-# Create a new skill (interactive)
-skillli init my-skill
-
-# Create a new skill (non-interactive / CI / agent)
-skillli init my-skill -y \
-  --description "What it does" \
-  --author your-name \
-  --tags "tag1,tag2" \
-  --category development \
-  --license MIT \
-  --version 1.0.0
-
-# Validate without publishing
-skillli publish --dry-run
-skillli publish ./my-skill --dry-run
-
-# Publish (generates manifest + checksum, shows PR instructions)
-skillli publish ./my-skill
-```
-
----
-
-## Registry Submission
-
-After `skillli publish` validates your skill:
-
-1. Fork `https://github.com/skillli/registry`
-2. Add your skill entry to `index.json`
-3. Submit a pull request with the generated manifest
-4. Automated checks run on your PR
-5. Once merged, your skill appears in `skillli search`
-
----
-
-## Common Mistakes
-
-| Mistake | Fix |
-|---------|-----|
-| Name starts with hyphen | Use lowercase alphanumeric start: `my-skill` not `-my-skill` |
-| Description too short | Must be 10+ characters |
-| No tags | At least 1 tag required |
-| SKILL.md too long | Keep under 500 lines, use references/ for extras |
-| Using exec() in instructions | Prohibited pattern — use specific commands instead |
-| Binary files in scripts/ | Only .sh, .py, .js, .ts allowed |
+Skills following the Agent Skills standard work across: Claude Code, Cursor, GitHub Copilot, Codex CLI, Windsurf, Gemini CLI, Roo Code, Trae, and others. Store in `.github/skills/` for cross-platform discovery, or `.claude/skills/` for Claude Code specifically.

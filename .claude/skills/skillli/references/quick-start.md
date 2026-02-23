@@ -1,86 +1,72 @@
 # Skillli Quick Start
 
-Get up and running in under 2 minutes.
-
----
-
 ## Install
 
 ```bash
 npm install -g skillli
 ```
 
-On first run, skillli auto-installs its own skill (the one teaching
-agents how to use it). No extra setup needed.
-
----
+On first run, skillli auto-installs its bundled skill. No extra setup.
 
 ## Find a Skill
 
 ```bash
-# Search the registry
 skillli search "code review"
-
-# Deep search across GitHub and npm too
-skillli trawl "react component generator"
+skillli trawl "react component generator"   # also searches GitHub + npm
 ```
-
----
 
 ## Install a Skill
 
 ```bash
-# From the registry
-skillli install code-reviewer --link
-
-# From GitHub
-skillli install https://github.com/user/my-skill --link
-
-# From a local folder
-skillli install ./my-local-skill --local
+skillli install code-reviewer --link        # from registry + link to .claude/skills/
+skillli install https://github.com/user/my-skill   # from GitHub
+skillli install ./my-local-skill --local    # from local folder
 ```
 
-The `--link` flag symlinks the skill into your project's
-`.claude/skills/` so Claude Code can use it immediately.
+`--link` symlinks into `.claude/skills/` so Claude Code can use it.
 
+## Create Your Own
+
+```bash
+skillli init my-skill                       # interactive
+skillli init my-skill -y --description "Generates unit tests for TypeScript" --author you --tags "testing,ts" --category development  # non-interactive
+```
+
+Edit `my-skill/SKILL.md`. The `description` field triggers invocation. The body has instructions.
+
+Generated SKILL.md follows the [Agent Skills open standard](https://agentskills.io/specification):
+
+```yaml
+---
+name: my-skill
+description: What it does and when to use it. Include trigger keywords. Single-line string, max 1024 chars.
+license: MIT
+metadata:
+  author: your-name
+  version: "1.0.0"
+  tags: testing, typescript
+  category: development
 ---
 
-## Create Your Own Skill
-
-### Interactive (human)
-```bash
-skillli init my-skill
+Instructions for the agent...
 ```
 
-### Non-interactive (agent / CI)
-```bash
-skillli init my-skill -y \
-  --description "Generates unit tests for TypeScript" \
-  --author your-name \
-  --tags "testing,typescript" \
-  --category development
-```
-
-Then edit `my-skill/SKILL.md` — that's where you write the instructions
-the AI agent follows.
-
----
+Only `name` and `description` are required by the standard. Everything else is optional.
 
 ## Publish
 
 ```bash
-# Validate first
-skillli publish ./my-skill --dry-run
-
-# Publish when ready
-skillli publish ./my-skill
+skillli publish ./my-skill --dry-run        # validate
+skillli publish ./my-skill                  # publish
 ```
 
----
+## Rate
 
-## MCP Server for Claude Code
+```bash
+skillli rate code-reviewer 5 -m "Excellent"
+```
 
-Add to your project's Claude Code MCP config:
+## MCP Server
 
 ```json
 {
@@ -93,59 +79,38 @@ Add to your project's Claude Code MCP config:
 }
 ```
 
-This gives Claude Code direct access to search, install, and rate
-skills through MCP tools.
-
----
-
 ## All Commands
 
-| Command | What it does |
+| Command | Description |
 |---------|-------------|
-| `skillli init [name]` | Create a new skill from template |
-| `skillli search <query>` | Search the registry |
+| `skillli init [name]` | Create skill from template |
+| `skillli search <query>` | Search registry |
 | `skillli install <skill>` | Install a skill |
 | `skillli uninstall <skill>` | Remove a skill |
-| `skillli info <skill>` | Show skill details and trust score |
+| `skillli info <skill>` | Show details + trust score |
 | `skillli list` | List installed skills |
 | `skillli rate <skill> <1-5>` | Rate a skill |
-| `skillli update` | Sync the local registry index |
-| `skillli publish [path]` | Validate and publish a skill |
-| `skillli trawl <query>` | Multi-source search (registry + GitHub + npm) |
+| `skillli update` | Sync registry index |
+| `skillli publish [path]` | Validate and publish |
+| `skillli trawl <query>` | Multi-source search |
 
----
+## Non-Interactive / Agent Mode
 
-## For Agents
-
-All commands work without a TTY. skillli detects non-interactive mode
-automatically and:
-- Skips prompts
-- Uses defaults for missing optional values
-- Errors clearly on missing required values
-- Auto-installs the bundled skill on first run
-
-You can also force non-interactive mode with `-y` or `--yes`:
-
-```bash
-skillli init my-skill -y --description "..." --author me
-```
-
----
+All commands work without a TTY. Auto-detected, or force with `-y`.
 
 ## File Locations
 
 | Path | Contents |
 |------|----------|
-| `~/.skillli/config.json` | Your settings, installed skills map |
+| `~/.skillli/config.json` | Settings, installed skills map |
 | `~/.skillli/index.json` | Cached registry index |
-| `~/.skillli/skills/` | All installed skill packages |
-| `~/.skillli/skills/skillli/` | This skill (the one you're reading) |
-| `.claude/skills/<name>/` | Linked skills for current project |
-
----
+| `~/.skillli/skills/` | Installed skill packages |
+| `.claude/skills/` | Linked skills for current project |
+| `.github/skills/` | Cross-platform skills (open standard) |
 
 ## More Docs
 
-- **Skill format spec:** `~/.skillli/skills/skillli/references/skill-format-spec.md`
-- **This quick start:** `~/.skillli/skills/skillli/references/quick-start.md`
-- **GitHub:** https://github.com/Domusgpt/skillli
+- Format spec: `~/.skillli/skills/skillli/references/skill-format-spec.md`
+- Agent Skills standard: https://agentskills.io/specification
+- Claude Code skills: https://code.claude.com/docs/en/skills
+- GitHub: https://github.com/Domusgpt/skillli

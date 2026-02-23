@@ -5,6 +5,10 @@ import { existsSync } from 'fs';
 import chalk from 'chalk';
 import { promptInit } from '../utils/prompts.js';
 
+/**
+ * Generate a spec-compliant SKILL.md following the Agent Skills open
+ * standard (agentskills.io). Skillli registry fields go under metadata.
+ */
 const SKILL_TEMPLATE = (answers: {
   name: string;
   version: string;
@@ -15,42 +19,22 @@ const SKILL_TEMPLATE = (answers: {
   category: string;
 }) => `---
 name: ${answers.name}
-version: ${answers.version}
 description: ${answers.description}
-author: ${answers.author}
 license: ${answers.license}
-tags: [${answers.tags.join(', ')}]
-category: ${answers.category}
-trust-level: community
-user-invocable: true
+metadata:
+  author: ${answers.author}
+  version: "${answers.version}"
+  tags: ${answers.tags.join(', ')}
+  category: ${answers.category}
 ---
 
 # ${answers.name}
 
-${answers.description}
-
-## When to Use
-
-Activate this skill when:
-- User asks to "..." or invokes \`/${answers.name}\`
-- Agent encounters a situation where ...
-
-Do NOT use when:
-- (list exclusions so the agent knows boundaries)
-
-## Instructions
+Step-by-step instructions for the AI agent. Be specific and actionable.
 
 1. First, ...
 2. Then, ...
 3. Finally, ...
-
-## Input Format
-
-Describe what input this skill expects (file paths, queries, etc.).
-
-## Output Format
-
-Describe what this skill produces (file changes, console output, etc.).
 
 ## Examples
 
@@ -63,11 +47,6 @@ Describe what this skill produces (file changes, console output, etc.).
 
 - List any limitations
 - Note what this skill does NOT handle
-
-## References
-
-- See \`references/\` for supplementary docs
-- See \`scripts/\` for helper scripts
 `;
 
 interface InitOptions {
@@ -87,7 +66,7 @@ export function registerInitCommand(program: Command): void {
     .description('Create a new skill from template')
     .option('-d, --dir <path>', 'Output directory', '.')
     .option('--version <version>', 'Skill version (default: 1.0.0)')
-    .option('--description <desc>', 'Skill description')
+    .option('--description <desc>', 'Skill description (include trigger keywords)')
     .option('--author <author>', 'Author (GitHub username)')
     .option('--license <license>', 'License (default: MIT)')
     .option('--tags <tags>', 'Comma-separated tags')
@@ -132,7 +111,8 @@ export function registerInitCommand(program: Command): void {
         await writeFile(join(outputDir, 'skillli.json'), JSON.stringify(manifest, null, 2));
 
         console.log(chalk.green(`\nSkill "${answers.name}" created at ${outputDir}`));
-        console.log(chalk.gray('  Edit SKILL.md to add your skill instructions.'));
+        console.log(chalk.gray('  Edit SKILL.md — the description triggers invocation, the body has instructions.'));
+        console.log(chalk.gray('  Run `skillli publish --dry-run` to validate.'));
         console.log(chalk.gray('  Run `skillli publish` when ready to share.\n'));
       } catch (error) {
         console.error(chalk.red('Error:'), error);

@@ -1,31 +1,24 @@
 ---
 name: skillli
-version: 0.1.0
-description: >
-  The skill librarian for agentic AI. Discover, search, install, rate,
-  publish, and manage SKILL.md packages. Use this when the user wants to
-  find skills, install a skill, create or publish their own skill, check
-  ratings, or when an agent needs to search for relevant skills to
-  accomplish a task. Triggers: /skillli, "find a skill", "search skills",
-  "install skill", "publish skill", "skill marketplace", "create a skill".
-author: Domusgpt
+description: The skill librarian for agentic AI. Discover, search, install, rate, publish, and manage SKILL.md packages. Use when the user wants to find skills, install a skill, create or publish their own skill, check ratings, or when an agent needs to search for relevant skills. Triggers on /skillli, "find a skill", "search skills", "install skill", "publish skill", "skill marketplace", "create a skill".
 license: MIT
-tags: [skills, marketplace, discovery, publishing, agents, claude, mcp]
-category: development
-trust-level: official
-disable-model-invocation: false
-user-invocable: true
+compatibility: Requires Node.js >= 18. Works in Claude Code, Cursor, GitHub Copilot, Codex CLI, and any Agent Skills compatible tool.
+metadata:
+  author: Domusgpt
+  version: "0.1.0"
+  tags: skills, marketplace, discovery, publishing, agents, mcp
+  category: development
+  trust-level: official
+  repository: https://github.com/Domusgpt/skillli
 ---
 
 # Skillli — The Skill Librarian
 
-You are the Skillli skill librarian. You help users and agents discover,
-evaluate, install, author, and publish agentic AI skills.
+Help users and agents discover, evaluate, install, author, and publish
+agentic AI skills following the [Agent Skills](https://agentskills.io)
+open standard.
 
-## Architecture Overview
-
-skillli manages SKILL.md packages — markdown files with YAML frontmatter
-that define instructions for AI agents. The ecosystem:
+skillli manages SKILL.md packages. The ecosystem:
 
 - **CLI** (`skillli`) — create, search, install, publish, rate skills
 - **MCP Server** (`skillli-mcp`) — tools for Claude Code integration
@@ -33,313 +26,181 @@ that define instructions for AI agents. The ecosystem:
 - **Trawler** — multi-source search across registry, GitHub, npm
 - **Safeguards** — trust scoring, pattern scanning, size limits
 
-Local state lives in `~/.skillli/`:
-```
-~/.skillli/
-├── config.json     # User config, installed skills map
-├── index.json      # Cached registry index
-├── skills/         # Installed skill packages
-└── cache/          # Cached data
-```
+Local state: `~/.skillli/` (config.json, index.json, skills/, cache/)
 
 ---
 
-## 1. Finding Skills
+## Find Skills
 
-### Quick Search (registry only)
 ```bash
 skillli search "code review"
-skillli search "kubernetes" --category devops
-skillli search "testing" --tag typescript --min-rating 4
+skillli search "kubernetes" --category devops --min-rating 4
+skillli trawl "database migration helper" --sources registry github npm
 ```
 
-### Deep Search (multi-source trawl)
-```bash
-skillli trawl "database migration helper"
-skillli trawl "react component generator" --sources registry github npm
-```
-
-### MCP Tools (for agents)
+MCP tools for agents:
 ```
 search_skills(query: "code review", tags: ["security"], limit: 5)
 trawl_skills(query: "kubernetes deployment", sources: ["registry", "github"])
 ```
 
-### How to present results
-- Show name, version, trust level badge, description, rating, download count
-- Recommend the top match with specific reasoning
-- If trust score < 50, flag the concern before suggesting install
+Present results with name, trust level badge, description, rating.
+If trust score < 50, flag the concern before suggesting install.
 
 ---
 
-## 2. Evaluating Skills
-
-Before installing, check the skill's details:
+## Evaluate Skills
 
 ```bash
 skillli info <skill-name>
 ```
 
-Or via MCP:
-```
-get_skill_info(name: "skill-name")
-```
+MCP: `get_skill_info(name: "skill-name")`
 
-### Trust levels
-| Level | Badge | Meaning |
-|-------|-------|---------|
-| official | [OFFICIAL] | Maintained by skillli team |
-| verified | [VERIFIED] | Author identity verified |
-| community | [COMMUNITY] | Published by any user, basic checks only |
+Trust levels: [OFFICIAL] (skillli team), [VERIFIED] (identity confirmed), [COMMUNITY] (basic checks only).
 
-### Trust score (0-100)
-Computed from: repository presence (+10), license (+10), trust level
-(+15-20), rating above 3.5 (+15), downloads (+5-10), no prohibited
-patterns (+20), SKILL.md under 500 lines (+15).
+Trust score 0-100: repo (+10), license (+10), trust level (+15-20), rating >= 3.5 (+15), downloads (+5-10), no prohibited patterns (+20), under 500 lines (+15).
 
-**Rule: never install a skill with trust score < 30 without explicit
-user confirmation.**
+Never install trust score < 30 without explicit user confirmation.
 
 ---
 
-## 3. Installing Skills
+## Install Skills
 
-### From the registry
 ```bash
-skillli install code-reviewer
-skillli install code-reviewer --link   # also symlink into .claude/skills/
-```
-
-### From GitHub
-```bash
+skillli install code-reviewer --link
 skillli install https://github.com/user/my-skill
-```
-
-### From a local directory
-```bash
 skillli install ./my-local-skill --local
 ```
 
-### MCP (for agents — auto-links by default)
-```
-install_skill(name: "code-reviewer", link: true)
-```
+MCP: `install_skill(name: "code-reviewer", link: true)`
 
-### What --link does
-Creates a symlink from `~/.skillli/skills/<name>` into the current
-project's `.claude/skills/<name>`, making it available as a Claude Code
-skill in that project.
+`--link` symlinks into `.claude/skills/` for the current project.
 
-### After installing
-1. The skill's SKILL.md is now in `~/.skillli/skills/<name>/`
-2. If linked, it's also at `.claude/skills/<name>/` in the project
-3. The skill is registered in `~/.skillli/config.json`
-4. Run `skillli list` to confirm
+After install: skill is in `~/.skillli/skills/<name>/`, registered in config, run `skillli list` to confirm.
 
 ---
 
-## 4. Using Installed Skills
+## Use Installed Skills
 
-Once installed and linked, skills are available via:
-- Slash command: `/<skill-name>` (if `user-invocable: true`)
-- Auto-invocation by the agent when the skill's trigger conditions match
-  (unless `disable-model-invocation: true`)
+Once linked, invoke via `/<skill-name>` (if `user-invocable: true`) or let the agent auto-invoke when triggers match.
 
-### List installed skills
 ```bash
 skillli list
 skillli list --json
-```
-
-### MCP resource
-```
-installed-skills → skillli://installed
-```
-
-### Uninstall
-```bash
 skillli uninstall <skill-name>
 ```
 
+MCP resource: `skillli://installed`
+
 ---
 
-## 5. Rating Skills
-
-After using a skill, rate it to help the community:
+## Rate Skills
 
 ```bash
-skillli rate code-reviewer 5
-skillli rate code-reviewer 4 -m "Great but needs better error messages"
+skillli rate code-reviewer 5 -m "Great for catching security issues"
 ```
 
-### MCP
-```
-rate_skill(name: "code-reviewer", rating: 5, comment: "Excellent")
-```
+MCP: `rate_skill(name: "code-reviewer", rating: 5, comment: "Excellent")`
 
 ---
 
-## 6. Creating a New Skill
+## Create a New Skill
 
-### Interactive (human at a TTY)
+Interactive:
 ```bash
 skillli init my-skill
 ```
-Prompts for name, version, description, author, license, tags, category.
 
-### Non-interactive (agents, CI, scripts)
+Non-interactive (agents, CI):
 ```bash
 skillli init my-skill -y \
-  --description "Generates unit tests for TypeScript files" \
+  --description "Generates unit tests for TypeScript" \
   --author your-github-name \
-  --tags "testing,typescript,unit-tests" \
+  --tags "testing,typescript" \
   --category development
 ```
 
-### What gets created
+Creates:
 ```
 my-skill/
-├── SKILL.md         # The skill definition (edit this!)
+├── SKILL.md         # Edit this — the skill definition
 ├── skillli.json     # Auto-generated manifest
-├── scripts/         # Optional helper scripts (.sh, .py, .js, .ts)
+├── scripts/         # Optional helper scripts
 └── references/      # Optional reference docs
 ```
 
-### SKILL.md format (copy-paste template)
+### Agent Skills Open Standard frontmatter (agentskills.io)
+
+Only `name` and `description` are required by the standard:
 
 ```yaml
 ---
 name: my-skill
-version: 1.0.0
-description: A clear, specific description of what this skill does (10-500 chars)
-author: your-github-username
+description: What this skill does and when to use it. Include trigger keywords. Max 1024 chars. Use a single-line string.
 license: MIT
-tags: [primary-tag, secondary-tag, language-or-framework]
-category: development
-trust-level: community
-user-invocable: true
+compatibility: Requires Python 3.10+
+metadata:
+  author: your-github-name
+  version: "1.0.0"
+  tags: testing, typescript
+  category: development
 ---
-
-# My Skill
-
-Brief summary of what this skill does and why it exists.
-
-## When to Use
-
-Describe the specific situations, triggers, or user requests that should
-activate this skill. Be explicit — agents use this to decide whether to
-invoke the skill.
-
-Examples of triggers:
-- "User asks to generate unit tests"
-- "User says /my-skill"
-- "Agent encounters untested TypeScript files"
-
-## Instructions
-
-Step-by-step instructions for the AI agent. Be specific and actionable.
-
-1. First, do X
-2. Then check Y
-3. Generate output in Z format
-4. Validate the result by ...
-
-## Input Format
-
-Describe what input the skill expects (if any).
-
-## Output Format
-
-Describe what the skill produces — file changes, console output,
-structured data, etc.
-
-## Examples
-
-### Example 1: Basic usage
-**Input:** User says "generate tests for src/utils.ts"
-**Action:** Read the file, identify exported functions, generate vitest tests
-**Output:** Creates test/utils.test.ts with passing tests
-
-## Constraints
-
-- List any limitations
-- Note file types or languages this skill handles
-- Mention what it explicitly does NOT do
-
-## References
-
-Point to any files in the references/ or scripts/ directory:
-- See `references/style-guide.md` for output formatting rules
-- Uses `scripts/validate.sh` for post-generation validation
 ```
 
-### Required frontmatter fields
-| Field | Format | Example |
-|-------|--------|---------|
-| name | lowercase, hyphens, alphanumeric | `my-skill` |
-| version | semver | `1.0.0` |
-| description | 10-500 chars | `"Generates unit tests for TS"` |
-| author | string | `your-github-name` |
-| license | SPDX | `MIT` |
-| tags | string array, 1-20 items | `[testing, typescript]` |
-| category | enum | `development` |
+| Field | Required | Constraints |
+|-------|----------|-------------|
+| `name` | Yes | Max 64 chars, lowercase + hyphens, no `--`, must match directory name |
+| `description` | Yes | Max 1024 chars, single-line string, include trigger keywords |
+| `license` | No | SPDX identifier or license file reference |
+| `compatibility` | No | Max 500 chars, environment requirements |
+| `metadata` | No | Key-value map for extensions (author, version, tags, etc.) |
+| `allowed-tools` | No | Space-delimited, experimental |
 
-### Optional frontmatter fields
-| Field | Default | Purpose |
-|-------|---------|---------|
-| repository | — | GitHub URL for source |
-| homepage | — | Docs URL |
-| trust-level | community | `community`, `verified`, `official` |
-| user-invocable | true | Allow `/<name>` invocation |
-| disable-model-invocation | false | Prevent auto-invocation |
-| min-skillli-version | — | Version gate |
-| checksum | — | Auto-set on publish |
+### Claude Code extension fields
 
-### Categories
-| Category | Use for |
-|----------|---------|
-| development | Code, testing, CI/CD, debugging, refactoring |
-| creative | Writing, design, content, media |
-| enterprise | Business, compliance, reporting, workflows |
-| data | Analytics, ETL, visualization, ML |
-| devops | Infrastructure, deployment, monitoring, cloud |
-| other | Everything else |
+| Field | Purpose |
+|-------|---------|
+| `argument-hint` | Autocomplete hint: `[issue-number]` |
+| `disable-model-invocation` | `true` = only user can invoke via `/name` |
+| `user-invocable` | `false` = hide from slash menu, Claude-only |
+| `model` | Force specific model |
+| `context` | `fork` = run in isolated subagent |
+| `agent` | Subagent type: `Explore`, `Plan`, `general-purpose`, or custom |
+| `hooks` | Lifecycle hooks: PreToolUse, PostToolUse, Stop |
+
+### Runtime substitutions
+
+| Variable | Description |
+|----------|-------------|
+| `$ARGUMENTS` | All args passed to `/skill-name args` |
+| `$0`, `$1`, `$2` | Positional args |
+| `${CLAUDE_SESSION_ID}` | Current session ID |
+| `` !`command` `` | Shell command output injected before skill runs |
+
+### Body content
+
+No format restrictions per the spec. Write whatever helps agents perform the task. The description is the triggering mechanism — do not duplicate trigger info in the body.
+
+Keep SKILL.md under 500 lines. Move detailed reference material to `references/`.
+
+See [references/skill-format-spec.md](references/skill-format-spec.md) for the complete authoring guide with copy-paste templates.
 
 ---
 
-## 7. Publishing a Skill
+## Publish
 
-### Validate first
 ```bash
-skillli publish --dry-run
-skillli publish ./my-skill --dry-run
+skillli publish --dry-run    # validate first
+skillli publish ./my-skill   # generates manifest, checksum, PR instructions
 ```
 
-Shows: safeguard report, trust score, manifest, checksum.
-
-### Publish
-```bash
-skillli publish ./my-skill
-```
-
-Currently, publishing means submitting a PR to the skillli registry
-repository. The CLI validates, generates the manifest and checksum,
-and provides instructions.
-
-### Safeguard checks run on publish
-1. Schema validation (all required frontmatter fields)
-2. File size limit (5MB total package)
-3. Line count (SKILL.md must be under 500 lines)
-4. Prohibited patterns (no eval, exec, rm -rf /, hardcoded secrets)
-5. Script allowlisting (only .sh, .py, .js, .ts in scripts/)
-6. Checksum generation (SHA-256 of all files)
+Safeguard checks: schema validation, 5MB size limit, 500 line limit, prohibited patterns (eval, exec, rm -rf /, hardcoded secrets), script allowlisting (.sh .py .js .ts only), SHA-256 checksum.
 
 ---
 
-## 8. MCP Server Integration
+## MCP Server Integration
 
-### Setup in Claude Code
-Add to your MCP configuration:
 ```json
 {
   "mcpServers": {
@@ -351,58 +212,17 @@ Add to your MCP configuration:
 }
 ```
 
-### Available MCP tools
-| Tool | Purpose |
-|------|---------|
-| `search_skills` | Search registry by query, tags, category |
-| `install_skill` | Install and optionally link to .claude/skills/ |
-| `get_skill_info` | Full details + trust score |
-| `trawl_skills` | Multi-source discovery (registry + GitHub + npm) |
-| `rate_skill` | Submit 1-5 star rating with optional comment |
-
-### Available MCP resources
-| Resource | URI | Returns |
-|----------|-----|---------|
-| installed-skills | `skillli://installed` | JSON list of installed skills |
-| skill-index | `skillli://index` | Full registry index |
+Tools: `search_skills`, `install_skill`, `get_skill_info`, `trawl_skills`, `rate_skill`
+Resources: `skillli://installed`, `skillli://index`
 
 ---
 
-## 9. Agent Workflow Patterns
+## Agent Workflow Patterns
 
-### Pattern: "I need a skill for X"
-1. `search_skills(query: "X")` — check registry first
-2. If no good results: `trawl_skills(query: "X")` — expand to GitHub/npm
-3. Present top results with trust scores
-4. On user approval: `install_skill(name: "...", link: true)`
-5. After use: prompt user to rate
+**"I need a skill for X"**: search_skills → trawl_skills if needed → present with trust scores → install on approval → prompt to rate after use.
 
-### Pattern: "Create a skill that does X"
-1. Run `skillli init <name> -y --description "..." --author ... --tags "..." --category ...`
-2. Edit the generated SKILL.md with full instructions
-3. Test by running `skillli publish --dry-run` to validate
-4. When ready: `skillli publish`
+**"Create a skill that does X"**: skillli init → edit SKILL.md → skillli publish --dry-run → skillli publish.
 
-### Pattern: Agent self-equipping
-When an agent encounters a task it lacks context for:
-1. Trawl for relevant skills: `trawl_skills(query: "<task description>")`
-2. Evaluate trust scores of results
-3. Install high-trust matches: `install_skill(name: "...", link: true)`
-4. Re-read the installed SKILL.md for instructions
-5. Proceed with the task using the skill's guidance
+**Agent self-equipping**: trawl for relevant skills → evaluate trust → install high-trust matches → read installed SKILL.md → proceed with task.
 
-### Non-interactive / CI usage
-All commands support non-interactive mode:
-- Detected automatically when stdin is not a TTY
-- Or forced with `-y` / `--yes` flag
-- Missing required fields get sensible defaults or error clearly
-
----
-
-## Safety Reminders
-
-- Always show trust score before recommending installation
-- Never install skills with trust score < 30 without explicit confirmation
-- Warn about [COMMUNITY] skills — recommend reviewing SKILL.md content
-- Check for prohibited patterns in any skill you evaluate
-- Respect `disable-model-invocation` — don't auto-invoke skills that set it
+All commands work non-interactively (auto-detected when stdin is not a TTY, or forced with `-y`).
