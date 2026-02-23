@@ -11,22 +11,39 @@ export type SkillCategory =
 export type TrustLevel = 'community' | 'verified' | 'official';
 
 // === Skill Metadata (parsed from SKILL.md frontmatter) ===
+// Three layers: Open Standard, Claude Code Extensions, Skillli Extensions
 
 export interface SkillMetadata {
+  // --- Open Standard: Required ---
   name: string;
-  version: string;
   description: string;
-  author: string;
-  license: string;
-  tags: string[];
-  category: SkillCategory;
+
+  // --- Open Standard: Optional ---
+  license?: string;
+  compatibility?: string | string[];
+  allowedTools?: string;
+  metadata?: Record<string, string>;
+
+  // --- Claude Code Extensions ---
+  argumentHint?: string;
+  disableModelInvocation?: boolean;
+  userInvocable?: boolean;
+  mode?: boolean;
+  context?: string;
+  agent?: string;
+  model?: string;
+  hooks?: Record<string, unknown>;
+
+  // --- Skillli Registry Extensions (optional per open standard, needed for registry ops) ---
+  version?: string;
+  author?: string;
+  tags?: string[];
+  category?: SkillCategory;
   repository?: string;
   homepage?: string;
   minSkillliVersion?: string;
   trustLevel: TrustLevel;
   checksum?: string;
-  disableModelInvocation?: boolean;
-  userInvocable?: boolean;
 }
 
 // === Parsed Skill (metadata + content) ===

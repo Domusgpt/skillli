@@ -15,13 +15,13 @@ const SKILL_TEMPLATE = (answers: {
   category: string;
 }) => `---
 name: ${answers.name}
-version: ${answers.version}
 description: ${answers.description}
-author: ${answers.author}
 license: ${answers.license}
-tags: [${answers.tags.join(', ')}]
-category: ${answers.category}
-trust-level: community
+metadata:
+  version: "${answers.version}"
+  author: "${answers.author}"
+  tags: "${answers.tags.join(', ')}"
+  category: "${answers.category}"
 user-invocable: true
 ---
 
@@ -31,7 +31,8 @@ ${answers.description}
 
 ## When to Use
 
-Describe when this skill should be invoked.
+Describe when this skill should be invoked. Include trigger keywords so the
+agent knows when to auto-load this skill.
 
 ## Instructions
 

@@ -19,7 +19,7 @@ export function registerPublishCommand(program: Command): void {
 
       try {
         const { skill, manifest, checksum } = await packageSkill(skillDir);
-        spinner.succeed(`Packaged ${chalk.cyan(skill.metadata.name)} v${skill.metadata.version}`);
+        spinner.succeed(`Packaged ${chalk.cyan(skill.metadata.name)} v${skill.metadata.version ?? '0.0.0'}`);
 
         // Show safeguard report
         const safeguards = await runSafeguards(skill, skillDir);

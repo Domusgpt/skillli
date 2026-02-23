@@ -144,6 +144,10 @@ export function computeTrustScore(
   // Has license (+10)
   if (skill.metadata.license) score += 10;
 
+  // Has version (+5) and author (+5) — optional per open standard
+  if (skill.metadata.version) score += 5;
+  if (skill.metadata.author) score += 5;
+
   // Verified/official author (+20)
   if (skill.metadata.trustLevel === 'verified') score += 15;
   if (skill.metadata.trustLevel === 'official') score += 20;

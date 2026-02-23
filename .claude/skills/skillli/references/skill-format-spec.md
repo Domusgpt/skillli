@@ -1,62 +1,287 @@
-# Skillli Skill Format Specification
+# Skill Format Specification
+
+This document describes the SKILL.md format as implemented by skillli. It covers
+three layers: the **Agent Skills Open Standard**, **Claude Code Extensions**, and
+**Skillli Registry Extensions**.
+
+Reference: [agentskills.io/specification](https://agentskills.io/specification) |
+[code.claude.com/docs/en/skills](https://code.claude.com/docs/en/skills)
+
+---
 
 ## SKILL.md Structure
 
-Every skill package MUST contain a `SKILL.md` file with YAML frontmatter.
-
-### Required Fields
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | string | Lowercase alphanumeric with hyphens (e.g. `my-skill`) |
-| `version` | string | Semver format (e.g. `1.0.0`) |
-| `description` | string | 10-500 characters describing the skill |
-| `author` | string | GitHub username or org |
-| `license` | string | SPDX license identifier (e.g. `MIT`) |
-| `tags` | string[] | 1-20 tags for discovery |
-| `category` | enum | One of: `development`, `creative`, `enterprise`, `data`, `devops`, `other` |
-
-### Optional Fields
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `repository` | string | - | GitHub repo URL |
-| `homepage` | string | - | Homepage URL |
-| `min-skillli-version` | string | - | Minimum skillli version required |
-| `trust-level` | enum | `community` | `community`, `verified`, or `official` |
-| `checksum` | string | - | SHA-256 checksum (auto-generated on publish) |
-| `disable-model-invocation` | boolean | `false` | Prevent AI from auto-invoking |
-| `user-invocable` | boolean | `true` | Allow manual invocation via slash command |
-
-### Trust Levels
-
-- **community**: Published by any user; basic validation only
-- **verified**: Author identity verified; additional review
-- **official**: Maintained by the skillli team
-
-### Markdown Body
-
-The body after the frontmatter contains the skill instructions that Claude
-follows when the skill is invoked. Keep under 500 lines.
-
-## Skill Package Directory
+Every skill is a **directory** containing a `SKILL.md` file. The file has YAML
+frontmatter (between `---` markers) followed by a Markdown body.
 
 ```
 my-skill/
-├── SKILL.md         # Required
-├── skillli.json     # Auto-generated manifest
-├── scripts/         # Optional helper scripts (.sh, .py, .js only)
-├── references/      # Optional reference documents
-├── assets/          # Optional templates, configs
-├── agents.md        # Optional agent instructions (CLAUDE.md equivalent)
+├── SKILL.md         # Required — frontmatter + instructions
+├── scripts/         # Optional — executable code (.sh, .py, .js, .ts)
+├── references/      # Optional — additional docs loaded on demand
+├── assets/          # Optional — templates, configs, static files
 └── LICENSE          # Recommended
 ```
 
+---
+
+## Layer 1: Agent Skills Open Standard
+
+These fields are portable across 26+ agent platforms (Claude Code, GitHub Copilot,
+Cursor, Gemini CLI, OpenAI Codex, and more).
+
+### Required Fields
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| `name` | string | 1-64 chars. Lowercase `[a-z0-9-]`. No leading/trailing/consecutive hyphens. Must match directory name. | Becomes the `/slash-command` name. |
+| `description` | string | 1-1024 chars. Single-line recommended. | How the agent decides when to invoke this skill. Include trigger keywords here. |
+
+### Optional Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `license` | string | SPDX identifier (e.g. `MIT`, `Apache-2.0`). |
+| `compatibility` | string or string[] | Environment requirements (e.g. `"Requires git, docker"`). Informational only. |
+| `allowed-tools` | string | Space-delimited tool pre-approvals. E.g. `"Bash(git:*) Read Grep Glob"`. Experimental. |
+| `metadata` | map<string, string> | Arbitrary key-value pairs. Skillli uses this for registry fields. |
+
+### Minimal Valid SKILL.md
+
+```markdown
+---
+name: hello-world
+description: Greets the user with a friendly message
+---
+
+# Hello World
+
+When invoked, respond with a warm greeting.
+```
+
+---
+
+## Layer 2: Claude Code Extensions
+
+These fields extend the open standard for Claude Code-specific features. Other
+agent platforms will ignore them.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `argument-hint` | string | none | Shown during `/` autocomplete. E.g. `"[issue-number]"`. |
+| `disable-model-invocation` | boolean | `false` | If `true`, only user can invoke via `/name`. Claude cannot auto-load. |
+| `user-invocable` | boolean | `true` | If `false`, hidden from `/` menu. Only Claude can invoke. |
+| `mode` | boolean | `false` | If `true`, appears in "Mode Commands" section. |
+| `context` | string | none | Set to `"fork"` to run in isolated subagent. |
+| `agent` | string | `"general-purpose"` | Subagent type when `context: fork`. Options: `Explore`, `Plan`, `Bash`, `general-purpose`, or custom agent name. |
+| `model` | string | inherits | Model alias (`sonnet`, `opus`, `haiku`) or full ID. |
+| `hooks` | object | none | Lifecycle hooks scoped to this skill. See hooks section below. |
+
+### Runtime Substitutions (in Markdown body)
+
+| Variable | Description |
+|----------|-------------|
+| `$ARGUMENTS` | All arguments passed when invoking the skill. |
+| `$ARGUMENTS[N]` / `$N` | Nth argument (0-indexed). |
+| `${CLAUDE_SESSION_ID}` | Current session ID. |
+| `` !`command` `` | Dynamic context injection — runs shell command, output replaces placeholder. |
+
+### Context: Fork
+
+When `context: fork` is set, the skill runs in an isolated subagent:
+- No access to parent conversation history
+- Skill content becomes the subagent's task prompt
+- Results are summarized and returned to the main conversation
+- Best for skills with explicit tasks, not guidelines
+
+### Agent Types
+
+| Type | Model | Tools | Use Case |
+|------|-------|-------|----------|
+| `Explore` | Haiku | Read-only | File discovery, code search |
+| `Plan` | Inherits | Read-only | Codebase research for planning |
+| `Bash` | Inherits | Terminal only | Running commands in isolation |
+| `general-purpose` | Inherits | All tools | Complex multi-step tasks |
+
+Custom agents from `.claude/agents/` can also be referenced by name.
+
+### Hooks Block
+
+```yaml
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "./scripts/validate.sh"
+          timeout: 30
+  PostToolUse:
+    - matcher: "Edit|Write"
+      hooks:
+        - type: command
+          command: "./scripts/lint.sh"
+          async: true
+  Stop:
+    - hooks:
+        - type: prompt
+          prompt: "Check if all tasks are complete: $ARGUMENTS"
+          model: haiku
+```
+
+Hook handler types: `command` (shell), `prompt` (single-turn LLM), `agent` (multi-turn subagent).
+
+---
+
+## Layer 3: Skillli Registry Extensions
+
+These fields are used by the skillli registry for indexing, search, trust scoring,
+and package management. They can be placed **either** as top-level frontmatter
+fields or inside the `metadata` block. Top-level fields take priority.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `version` | string (semver) | `"0.0.0"` | Package version for registry. |
+| `author` | string | `"unknown"` | GitHub username or organization. |
+| `tags` | string[] or CSV string | `[]` | 1-20 tags for discovery. |
+| `category` | enum | `"other"` | `development`, `creative`, `enterprise`, `data`, `devops`, `other`. |
+| `trust-level` | enum | `"community"` | `community`, `verified`, `official`. |
+| `repository` | URL | none | GitHub repository URL. |
+| `homepage` | URL | none | Homepage or docs URL. |
+| `min-skillli-version` | string | none | Minimum skillli CLI version required. |
+| `checksum` | string | auto-generated | SHA-256 checksum (set by publish). |
+
+### Placing in metadata block (spec-compliant)
+
+```yaml
+---
+name: my-skill
+description: Does something useful for developers
+license: MIT
+metadata:
+  version: "1.2.0"
+  author: "my-github-user"
+  tags: "typescript, testing, ci"
+  category: "development"
+---
+```
+
+### Placing as top-level fields (convenience, backwards-compatible)
+
+```yaml
+---
+name: my-skill
+description: Does something useful for developers
+version: 1.2.0
+author: my-github-user
+license: MIT
+tags: [typescript, testing, ci]
+category: development
+trust-level: community
+---
+```
+
+Both formats are accepted. Top-level fields always win when both are present.
+
+---
+
+## Trust Levels
+
+| Level | Description | How to get |
+|-------|-------------|------------|
+| `community` | Default. Basic validation only. | Publish to registry. |
+| `verified` | Author identity verified. Additional review. | Apply for verification. |
+| `official` | Maintained by the skillli team. | Skillli team only. |
+
+---
+
 ## Categories
 
-- **development**: Code, testing, CI/CD, debugging
-- **creative**: Writing, design, content creation
-- **enterprise**: Business, compliance, reporting
-- **data**: Analytics, ETL, visualization
-- **devops**: Infrastructure, deployment, monitoring
-- **other**: Everything else
+| Category | Covers |
+|----------|--------|
+| `development` | Code, testing, CI/CD, debugging, linting |
+| `creative` | Writing, design, content creation |
+| `enterprise` | Business, compliance, reporting |
+| `data` | Analytics, ETL, visualization |
+| `devops` | Infrastructure, deployment, monitoring |
+| `other` | Everything else |
+
+---
+
+## Progressive Disclosure
+
+Skills use three levels of loading:
+
+1. **Always loaded**: `name` + `description` are injected into the system prompt
+2. **On invocation**: Full SKILL.md body is loaded when skill is activated
+3. **On demand**: Files in `scripts/`, `references/`, `assets/` loaded as needed
+
+Keep `description` concise (it's always in context). Put detailed instructions in
+the body. Keep SKILL.md under 500 lines / 5,000 tokens.
+
+---
+
+## Copy-Paste Templates
+
+### Minimal (open standard only)
+
+```markdown
+---
+name: my-skill
+description: One line explaining when to use this skill
+---
+
+# My Skill
+
+Instructions for the agent.
+```
+
+### With Claude Code extensions
+
+```markdown
+---
+name: my-skill
+description: One line explaining when to use this skill
+argument-hint: "[filename]"
+context: fork
+agent: Explore
+model: haiku
+user-invocable: true
+---
+
+# My Skill
+
+Use `$ARGUMENTS` as the target file.
+Do the thing, report results.
+```
+
+### Full skillli registry skill
+
+```markdown
+---
+name: my-skill
+description: One line explaining when to use this skill
+license: MIT
+metadata:
+  version: "1.0.0"
+  author: "github-user"
+  tags: "typescript, testing"
+  category: "development"
+user-invocable: true
+---
+
+# My Skill
+
+Instructions for the agent.
+
+## When to Use
+
+Trigger keywords and scenarios.
+
+## Instructions
+
+Step-by-step behavior.
+
+## Examples
+
+Example inputs and expected outputs.
+```
