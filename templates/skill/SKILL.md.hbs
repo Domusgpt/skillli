@@ -1,33 +1,30 @@
 ---
 name: {{name}}
-version: {{version}}
 description: {{description}}
-author: {{author}}
 license: {{license}}
-tags: [{{#each tags}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}]
-category: {{category}}
-trust-level: community
-user-invocable: true
+metadata:
+  author: {{author}}
+  version: "{{version}}"
+  tags: {{#each tags}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+  category: {{category}}
 ---
 
 # {{name}}
 
-{{description}}
+Step-by-step instructions for the AI agent. Be specific and actionable.
 
-## When to Use
-
-Describe when this skill should be invoked.
-
-## Instructions
-
-Describe what the AI should do when this skill is activated.
+1. First, ...
+2. Then, ...
+3. Finally, ...
 
 ## Examples
 
-Provide example inputs and expected behavior.
+### Example 1: Basic usage
+**Input:** "..."
+**Action:** What the agent does step by step
+**Output:** What gets created or changed
 
-## Guidelines
+## Constraints
 
-- Keep instructions clear and specific
-- Include error handling guidance
-- Reference any supporting files in scripts/ or references/
+- List any limitations
+- Note what this skill does NOT handle

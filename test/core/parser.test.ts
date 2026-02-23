@@ -26,7 +26,7 @@ describe('parseSkillFile', () => {
 });
 
 describe('parseSkillContent', () => {
-  it('parses inline content', () => {
+  it('parses inline content with top-level skillli fields', () => {
     const content = `---
 name: inline-skill
 version: 0.1.0
@@ -49,15 +49,47 @@ Body content here.`;
     expect(skill.filePath).toBe('<inline>');
   });
 
+  it('parses open standard format with metadata block', () => {
+    const content = `---
+name: standard-skill
+description: A skill using the Agent Skills open standard format
+license: MIT
+metadata:
+  author: someone
+  version: "2.0.0"
+  tags: testing, standard
+  category: development
+---
+
+Open standard skill body.`;
+
+    const skill = parseSkillContent(content);
+    expect(skill.metadata.name).toBe('standard-skill');
+    expect(skill.metadata.author).toBe('someone');
+    expect(skill.metadata.version).toBe('2.0.0');
+    expect(skill.metadata.tags).toEqual(['testing', 'standard']);
+    expect(skill.metadata.category).toBe('development');
+  });
+
+  it('top-level fields win over metadata block', () => {
+    const content = `---
+name: override-test
+description: Testing field priority
+author: top-level-author
+metadata:
+  author: metadata-author
+---
+
+Body.`;
+
+    const skill = parseSkillContent(content);
+    expect(skill.metadata.author).toBe('top-level-author');
+  });
+
   it('applies defaults for optional fields', () => {
     const content = `---
 name: minimal
-version: 1.0.0
-description: A minimal skill with only required fields present
-author: someone
-license: Apache-2.0
-tags: [minimal]
-category: other
+description: A minimal skill with only required fields
 ---
 
 Content.`;
@@ -66,6 +98,29 @@ Content.`;
     expect(skill.metadata.trustLevel).toBe('community');
     expect(skill.metadata.disableModelInvocation).toBe(false);
     expect(skill.metadata.userInvocable).toBe(true);
+    expect(skill.metadata.version).toBeUndefined();
+    expect(skill.metadata.author).toBeUndefined();
+  });
+
+  it('parses Claude Code extension fields', () => {
+    const content = `---
+name: extended
+description: Skill with Claude Code extensions
+context: fork
+agent: Explore
+model: claude-sonnet-4-20250514
+argument-hint: "[file-path]"
+disable-model-invocation: true
+---
+
+Extended skill.`;
+
+    const skill = parseSkillContent(content);
+    expect(skill.metadata.context).toBe('fork');
+    expect(skill.metadata.agent).toBe('Explore');
+    expect(skill.metadata.model).toBe('claude-sonnet-4-20250514');
+    expect(skill.metadata.argumentHint).toBe('[file-path]');
+    expect(skill.metadata.disableModelInvocation).toBe(true);
   });
 });
 
@@ -74,43 +129,30 @@ describe('validateMetadata', () => {
     expect(() =>
       validateMetadata({
         name: 'INVALID_NAME!!',
-        version: '1.0.0',
         description: 'A skill with an invalid name format',
-        author: 'test',
-        license: 'MIT',
-        tags: ['test'],
-        category: 'other',
       }),
     ).toThrow(SkillValidationError);
   });
 
-  it('rejects invalid semver', () => {
+  it('rejects invalid semver when version is provided', () => {
     expect(() =>
       validateMetadata({
         name: 'test',
-        version: 'not-semver',
         description: 'A skill with an invalid version string',
-        author: 'test',
-        license: 'MIT',
-        tags: ['test'],
-        category: 'other',
+        version: 'not-semver',
       }),
     ).toThrow(SkillValidationError);
   });
 
-  it('rejects missing required fields', () => {
+  it('rejects missing description', () => {
     expect(() => validateMetadata({ name: 'test' })).toThrow(SkillValidationError);
   });
 
-  it('rejects invalid category', () => {
+  it('rejects invalid category when provided', () => {
     expect(() =>
       validateMetadata({
         name: 'test',
-        version: '1.0.0',
-        description: 'A skill with an invalid category value',
-        author: 'test',
-        license: 'MIT',
-        tags: ['test'],
+        description: 'A skill with an invalid category',
         category: 'not-a-category',
       }),
     ).toThrow(SkillValidationError);
