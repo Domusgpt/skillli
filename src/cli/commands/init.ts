@@ -31,15 +31,43 @@ ${answers.description}
 
 ## When to Use
 
-Describe when this skill should be invoked.
+Activate this skill when:
+- User asks to "..." or invokes \`/${answers.name}\`
+- Agent encounters a situation where ...
+
+Do NOT use when:
+- (list exclusions so the agent knows boundaries)
 
 ## Instructions
 
-Describe what the AI should do when this skill is activated.
+1. First, ...
+2. Then, ...
+3. Finally, ...
+
+## Input Format
+
+Describe what input this skill expects (file paths, queries, etc.).
+
+## Output Format
+
+Describe what this skill produces (file changes, console output, etc.).
 
 ## Examples
 
-Provide example inputs and expected behavior.
+### Example 1: Basic usage
+**Input:** "..."
+**Action:** What the agent does step by step
+**Output:** What gets created or changed
+
+## Constraints
+
+- List any limitations
+- Note what this skill does NOT handle
+
+## References
+
+- See \`references/\` for supplementary docs
+- See \`scripts/\` for helper scripts
 `;
 
 interface InitOptions {
