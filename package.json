@@ -81,6 +81,18 @@
     "typescript": "^5.5.0",
     "vitest": "^2.0.0"
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Domusgpt/skillli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Domusgpt/skillli/issues"
+  },
+  "homepage": "https://github.com/Domusgpt/skillli#readme",
   "engines": {
     "node": ">=18.0.0"
   }
