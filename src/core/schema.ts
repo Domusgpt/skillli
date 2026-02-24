@@ -14,6 +14,36 @@ export const SkillCategorySchema = z.enum([
 
 export const TrustLevelSchema = z.enum(['community', 'verified', 'official']);
 
+// === Interactive / Branching Skills Schemas ===
+
+const SkillQuizBranchSchema = z.object({
+  goto: z.string().optional(),
+  'load-skill': z.string().optional(),
+  'load-reference': z.string().optional(),
+  message: z.string().optional(),
+}).passthrough();
+
+const SkillQuizOptionSchema = z.object({
+  label: z.string().min(1),
+  correct: z.boolean().optional(),
+}).passthrough();
+
+const SkillQuizQuestionSchema = z.object({
+  question: z.string().min(1),
+  options: z.array(SkillQuizOptionSchema).min(2).max(6),
+  explanation: z.string().optional(),
+  'on-correct': SkillQuizBranchSchema.optional(),
+  'on-incorrect': SkillQuizBranchSchema.optional(),
+}).passthrough();
+
+const SkillQuizSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().optional(),
+  gate: z.boolean().default(false),
+  'passing-score': z.number().min(0).max(100).default(100),
+  questions: z.array(SkillQuizQuestionSchema).min(1),
+}).passthrough();
+
 // Name: 1-64 chars, lowercase alphanumeric + hyphens, no leading/trailing/consecutive hyphens
 const namePattern = /^[a-z0-9](?:[a-z0-9]|-(?=[a-z0-9])){0,62}[a-z0-9]$|^[a-z0-9]$/;
 
@@ -41,6 +71,9 @@ export const SkillMetadataSchema = z.object({
   agent: z.string().optional(),
   model: z.string().optional(),
   hooks: z.record(z.string(), z.unknown()).optional(),
+
+  // --- Skillli Interactive Extensions (experimental) ---
+  quiz: z.union([z.array(SkillQuizSchema), SkillQuizSchema]).optional(),
 
   // --- Skillli Registry Extensions (accepted top-level for convenience) ---
   version: z.string().regex(/^\d+\.\d+\.\d+$/, 'Must be valid semver (e.g. 1.0.0)').optional(),

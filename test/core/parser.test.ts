@@ -220,6 +220,123 @@ Content.`;
   });
 });
 
+describe('quiz parsing', () => {
+  it('parses a skill with a quiz gate from frontmatter', () => {
+    const content = `---
+name: quiz-skill
+description: A skill with an onboarding quiz
+quiz:
+  - title: "Auth Check"
+    description: "Verify understanding of auth flow"
+    gate: true
+    passing-score: 100
+    questions:
+      - question: "Which token type does this API use?"
+        options:
+          - label: "JWT Bearer tokens"
+            correct: true
+          - label: "API key in query string"
+        explanation: "This API uses JWT Bearer tokens."
+        on-correct:
+          goto: "## Setup Steps"
+        on-incorrect:
+          load-reference: "references/auth-overview.md"
+          message: "Review the auth overview first."
+---
+
+# Quiz Skill
+
+## Setup Steps
+
+Do the setup.`;
+
+    const skill = parseSkillContent(content);
+    expect(skill.metadata.quiz).toBeDefined();
+    expect(skill.metadata.quiz).toHaveLength(1);
+    const quiz = skill.metadata.quiz![0];
+    expect(quiz.title).toBe('Auth Check');
+    expect(quiz.gate).toBe(true);
+    expect(quiz.passingScore).toBe(100);
+    expect(quiz.questions).toHaveLength(1);
+
+    const q = quiz.questions[0];
+    expect(q.question).toBe('Which token type does this API use?');
+    expect(q.options).toHaveLength(2);
+    expect(q.options[0].correct).toBe(true);
+    expect(q.explanation).toBe('This API uses JWT Bearer tokens.');
+    expect(q.onCorrect?.goto).toBe('## Setup Steps');
+    expect(q.onIncorrect?.loadReference).toBe('references/auth-overview.md');
+    expect(q.onIncorrect?.message).toBe('Review the auth overview first.');
+  });
+
+  it('exposes quizzes on ParsedSkill', () => {
+    const content = `---
+name: quiz-exposed
+description: Check quizzes on ParsedSkill
+quiz:
+  title: "Simple Quiz"
+  questions:
+    - question: "Is this working?"
+      options:
+        - label: "Yes"
+          correct: true
+        - label: "No"
+---
+
+Content.`;
+
+    const skill = parseSkillContent(content);
+    expect(skill.quizzes).toBeDefined();
+    expect(skill.quizzes).toHaveLength(1);
+    expect(skill.quizzes![0].questions[0].question).toBe('Is this working?');
+  });
+
+  it('parses quiz with branching to other skills', () => {
+    const content = `---
+name: branching-skill
+description: Branches to other skills on wrong answers
+quiz:
+  questions:
+    - question: "Where should refresh tokens be stored?"
+      options:
+        - label: "localStorage"
+        - label: "httpOnly secure cookie"
+          correct: true
+      on-incorrect:
+        load-skill: "security-basics"
+        message: "Load security-basics for context."
+---
+
+Content.`;
+
+    const skill = parseSkillContent(content);
+    const q = skill.metadata.quiz![0].questions[0];
+    expect(q.onIncorrect?.loadSkill).toBe('security-basics');
+    expect(q.onIncorrect?.message).toBe('Load security-basics for context.');
+  });
+
+  it('defaults gate to false and passing-score to 100', () => {
+    const content = `---
+name: defaults-quiz
+description: Quiz with defaults
+quiz:
+  questions:
+    - question: "Default test?"
+      options:
+        - label: "A"
+          correct: true
+        - label: "B"
+---
+
+Content.`;
+
+    const skill = parseSkillContent(content);
+    const quiz = skill.metadata.quiz![0];
+    expect(quiz.gate).toBe(false);
+    expect(quiz.passingScore).toBe(100);
+  });
+});
+
 describe('validateMetadata', () => {
   it('rejects invalid name format', () => {
     expect(() =>

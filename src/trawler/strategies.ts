@@ -1,5 +1,6 @@
 import type { TrawlResult, RegistryEntry } from '../core/types.js';
 import { getLocalIndex } from '../core/local-store.js';
+import { parseSkillContent } from '../core/parser.js';
 
 export async function searchRegistry(query: string): Promise<TrawlResult[]> {
   const index = await getLocalIndex();
@@ -117,5 +118,58 @@ export async function searchNpm(query: string): Promise<TrawlResult[]> {
     // npm API may be unavailable — silently return empty
   }
 
+  return results;
+}
+
+/**
+ * Discover skills from a domain's .well-known/skills/ endpoint.
+ * Per the Agent Skills spec, any website can expose skills at:
+ *   https://example.com/.well-known/skills/default/skill.md
+ *
+ * This is decentralized discovery — companies publish their own skills
+ * on their domain (like Stripe, Vercel, Notion) without a central registry.
+ */
+export async function searchWellKnown(domains: string[]): Promise<TrawlResult[]> {
+  const results: TrawlResult[] = [];
+
+  const fetches = domains.map(async (domain) => {
+    const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const url = `https://${cleanDomain}/.well-known/skills/default/skill.md`;
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+
+      if (!res.ok) return;
+
+      const content = await res.text();
+      // Must look like a SKILL.md (has frontmatter)
+      if (!content.startsWith('---')) return;
+
+      try {
+        const skill = parseSkillContent(content, url);
+        results.push({
+          source: 'web',
+          skill: {
+            name: skill.metadata.name,
+            description: skill.metadata.description,
+            author: skill.metadata.author ?? cleanDomain,
+            tags: skill.metadata.tags,
+            repository: skill.metadata.repository,
+          } as Partial<RegistryEntry>,
+          confidence: 0.85, // High confidence — it's an explicit .well-known endpoint
+          url,
+        });
+      } catch {
+        // Invalid SKILL.md at this endpoint — skip
+      }
+    } catch {
+      // Domain unreachable or no .well-known — skip
+    }
+  });
+
+  await Promise.all(fetches);
   return results;
 }

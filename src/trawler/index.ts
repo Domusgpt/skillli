@@ -1,5 +1,5 @@
 import type { TrawlResult, TrawlOptions } from '../core/types.js';
-import { searchRegistry, searchGithub, searchNpm } from './strategies.js';
+import { searchRegistry, searchGithub, searchNpm, searchWellKnown } from './strategies.js';
 import { deduplicateResults, rankResults } from './ranker.js';
 
 export async function trawl(
@@ -20,6 +20,11 @@ export async function trawl(
   }
   if (sources.includes('npm')) {
     searches.push(searchNpm(query));
+  }
+
+  // .well-known/skills/ decentralized discovery
+  if (options.domains?.length) {
+    searches.push(searchWellKnown(options.domains));
   }
 
   const allResults = (await Promise.all(searches)).flat();

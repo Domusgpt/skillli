@@ -16,6 +16,10 @@ export type {
   LocalIndex,
   SkillCategory,
   TrustLevel,
+  SkillQuiz,
+  SkillQuizQuestion,
+  SkillQuizOption,
+  SkillQuizBranch,
 } from './core/types.js';
 
 // Parser

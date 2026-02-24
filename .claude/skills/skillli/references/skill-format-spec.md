@@ -220,6 +220,126 @@ the body. Keep SKILL.md under 500 lines / 5,000 tokens.
 
 ---
 
+## Layer 4: Interactive / Branching Skills (Experimental)
+
+Skills can include **quiz gates** that force context ingestion before the agent
+proceeds. Like licensing exams in real life — the agent must actually process
+and understand the material to answer correctly, which narrows the context
+window to what matters and drives onboarding flow.
+
+### How It Works
+
+1. Skill author defines quiz questions in YAML frontmatter
+2. When skill is invoked, the agent encounters quiz gates
+3. The agent must answer correctly to proceed (if `gate: true`)
+4. Wrong answers branch to other docs, skills, or sections — redirecting
+   context to fill gaps before retrying
+5. The onboarding flow adapts based on what the agent gets right/wrong
+
+### Quiz Frontmatter
+
+```yaml
+---
+name: auth-setup
+description: Guides through authentication setup with context verification
+quiz:
+  - title: "Auth Prerequisites Check"
+    description: "Verify understanding of the auth flow before proceeding"
+    gate: true
+    passing-score: 100
+    questions:
+      - question: "Which token type does this API use for authentication?"
+        options:
+          - label: "JWT Bearer tokens"
+            correct: true
+          - label: "API key in query string"
+          - label: "OAuth 1.0a signatures"
+        explanation: "This API uses JWT Bearer tokens. See the auth reference."
+        on-correct:
+          goto: "## Setup Steps"
+        on-incorrect:
+          load-reference: "references/auth-overview.md"
+          message: "Review the auth overview first, then retry."
+      - question: "Where should refresh tokens be stored?"
+        options:
+          - label: "localStorage"
+          - label: "httpOnly secure cookie"
+            correct: true
+          - label: "sessionStorage"
+        explanation: "Refresh tokens must be in httpOnly secure cookies to prevent XSS."
+        on-incorrect:
+          load-skill: "security-basics"
+          message: "Load the security-basics skill for context on token storage."
+---
+```
+
+### Quiz Fields
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `quiz` | array or object | none | One or more quiz blocks. |
+| `quiz[].title` | string | none | Quiz heading. |
+| `quiz[].description` | string | none | Purpose of the quiz. |
+| `quiz[].gate` | boolean | `false` | If `true`, agent must pass before proceeding. |
+| `quiz[].passing-score` | number (0-100) | `100` | Percentage of correct answers needed. |
+| `quiz[].questions` | array | required | At least 1 question. |
+
+### Question Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `question` | string | The question text. |
+| `options` | array (2-6) | Answer choices. At least one must have `correct: true`. |
+| `options[].label` | string | Display text for this choice. |
+| `options[].correct` | boolean | Marks the correct answer. |
+| `explanation` | string | Shown after answering — context for learning. |
+| `on-correct` | branch | What to do when answered correctly. |
+| `on-incorrect` | branch | What to do when answered incorrectly. |
+
+### Branch Actions
+
+| Field | Description |
+|-------|-------------|
+| `goto` | Jump to a section anchor in the skill body (e.g. `"## Setup Steps"`). |
+| `load-skill` | Load another skill by name (e.g. `"security-basics"`). |
+| `load-reference` | Load a reference doc (e.g. `"references/auth-overview.md"`). |
+| `message` | Message to show the agent/user. |
+
+### Use Cases
+
+- **Onboarding**: Quiz the agent on project conventions before it writes code
+- **API setup**: Verify understanding of auth flow before generating integration code
+- **Compliance**: Ensure the agent understands data handling rules before accessing PII
+- **Multi-path tutorials**: Branch to beginner/intermediate/advanced based on quiz results
+- **Context narrowing**: Force the agent to ingest specific docs by quizzing on their content
+
+---
+
+## Decentralized Discovery: .well-known/skills/
+
+Any domain can publish skills at a `.well-known` endpoint, enabling decentralized
+discovery without a central registry. Think of it like a company's skill portfolio.
+
+```
+https://stripe.com/.well-known/skills/default/skill.md
+https://vercel.com/.well-known/skills/default/skill.md
+```
+
+Use the trawler with `domains` to probe for published skills:
+
+```typescript
+import { trawl } from 'skillli';
+
+const results = await trawl('payments', {
+  domains: ['stripe.com', 'square.com', 'adyen.com'],
+});
+```
+
+This complements the centralized registry — companies publish their own skills
+on their domain, users discover them by probing known domains.
+
+---
+
 ## Copy-Paste Templates
 
 ### Minimal (open standard only)
@@ -284,4 +404,57 @@ Step-by-step behavior.
 ## Examples
 
 Example inputs and expected outputs.
+```
+
+### Interactive skill with quiz gate
+
+```markdown
+---
+name: api-onboarding
+description: Guides through API integration with context verification quizzes
+license: MIT
+quiz:
+  - title: "Prerequisites Check"
+    gate: true
+    passing-score: 100
+    questions:
+      - question: "What authentication method does this API use?"
+        options:
+          - label: "Bearer token"
+            correct: true
+          - label: "API key"
+          - label: "Basic auth"
+        on-incorrect:
+          load-reference: "references/auth-guide.md"
+          message: "Review the auth guide before continuing."
+      - question: "What is the base URL for the production API?"
+        options:
+          - label: "https://api.example.com/v2"
+            correct: true
+          - label: "https://example.com/api"
+          - label: "https://api.example.com/v1"
+        on-incorrect:
+          goto: "## API Reference"
+metadata:
+  version: "1.0.0"
+  author: "example-team"
+  tags: "api, onboarding"
+  category: "development"
+---
+
+# API Onboarding
+
+This skill verifies you understand the API before generating integration code.
+The quiz above must pass before the instructions below are followed.
+
+## API Reference
+
+Base URL: `https://api.example.com/v2`
+Auth: Bearer token in Authorization header.
+
+## Setup Steps
+
+1. Create a `.env` file with your API key
+2. Initialize the SDK client
+3. Test with a health check endpoint
 ```

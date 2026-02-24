@@ -2,7 +2,7 @@ import { readFile } from 'fs/promises';
 import matter from 'gray-matter';
 import { SkillMetadataSchema, type RawSkillMetadata } from './schema.js';
 import { SkillValidationError } from './errors.js';
-import type { SkillMetadata, SkillCategory, ParsedSkill } from './types.js';
+import type { SkillMetadata, SkillCategory, ParsedSkill, SkillQuiz, SkillQuizQuestion, SkillQuizBranch } from './types.js';
 
 /**
  * Normalize tags from various input formats:
@@ -61,6 +61,48 @@ function mergeWithMetadataBlock(data: Record<string, unknown>): Record<string, u
   return merged;
 }
 
+/**
+ * Normalize a quiz branch from kebab-case YAML to camelCase types.
+ */
+function normalizeQuizBranch(raw: Record<string, unknown> | undefined): SkillQuizBranch | undefined {
+  if (!raw) return undefined;
+  return {
+    goto: raw.goto as string | undefined,
+    loadSkill: (raw['load-skill'] ?? raw.loadSkill) as string | undefined,
+    loadReference: (raw['load-reference'] ?? raw.loadReference) as string | undefined,
+    message: raw.message as string | undefined,
+  };
+}
+
+/**
+ * Normalize quizzes from validated schema output to typed SkillQuiz[].
+ */
+function normalizeQuizzes(raw: unknown): SkillQuiz[] | undefined {
+  if (!raw) return undefined;
+
+  const quizzes = Array.isArray(raw) ? raw : [raw];
+  return quizzes.map((q: Record<string, unknown>) => ({
+    title: q.title as string | undefined,
+    description: q.description as string | undefined,
+    gate: (q.gate as boolean) ?? false,
+    passingScore: (q['passing-score'] as number) ?? 100,
+    questions: ((q.questions as Record<string, unknown>[]) ?? []).map((question) => ({
+      question: question.question as string,
+      options: ((question.options as Record<string, unknown>[]) ?? []).map((opt) => ({
+        label: opt.label as string,
+        correct: opt.correct as boolean | undefined,
+      })),
+      explanation: question.explanation as string | undefined,
+      onCorrect: normalizeQuizBranch(
+        (question['on-correct'] ?? question.onCorrect) as Record<string, unknown> | undefined,
+      ),
+      onIncorrect: normalizeQuizBranch(
+        (question['on-incorrect'] ?? question.onIncorrect) as Record<string, unknown> | undefined,
+      ),
+    })),
+  }));
+}
+
 function normalizeMetadata(raw: RawSkillMetadata): SkillMetadata {
   const tags = normalizeTags(raw.tags);
 
@@ -84,6 +126,9 @@ function normalizeMetadata(raw: RawSkillMetadata): SkillMetadata {
     agent: raw.agent,
     model: raw.model,
     hooks: raw.hooks as Record<string, unknown> | undefined,
+
+    // Skillli Interactive Extensions
+    quiz: normalizeQuizzes(raw.quiz),
 
     // Skillli Registry Extensions
     version: raw.version,
@@ -120,6 +165,7 @@ export function parseSkillContent(content: string, filePath = '<inline>'): Parse
     content: body.trim(),
     rawFrontmatter: rawFrontmatter || '',
     filePath,
+    quizzes: metadata.quiz,
   };
 }
 

@@ -236,6 +236,77 @@ describe('SkillMetadataSchema', () => {
     expect(result.version).toBeUndefined();
   });
 
+  // === Quiz (interactive/branching) ===
+
+  it('accepts a skill with a quiz gate', () => {
+    const result = SkillMetadataSchema.parse({
+      name: 'quiz-skill',
+      description: 'A skill with quizzes',
+      quiz: {
+        title: 'Prereqs',
+        gate: true,
+        'passing-score': 100,
+        questions: [
+          {
+            question: 'What auth method?',
+            options: [
+              { label: 'JWT', correct: true },
+              { label: 'API Key' },
+            ],
+            'on-incorrect': { 'load-reference': 'references/auth.md' },
+          },
+        ],
+      },
+    });
+    expect(result.quiz).toBeDefined();
+  });
+
+  it('accepts quiz as an array of quizzes', () => {
+    const result = SkillMetadataSchema.parse({
+      name: 'multi-quiz',
+      description: 'Multiple quizzes',
+      quiz: [
+        {
+          title: 'Quiz 1',
+          questions: [
+            { question: 'Q1?', options: [{ label: 'A', correct: true }, { label: 'B' }] },
+          ],
+        },
+        {
+          title: 'Quiz 2',
+          questions: [
+            { question: 'Q2?', options: [{ label: 'C' }, { label: 'D', correct: true }] },
+          ],
+        },
+      ],
+    });
+    expect(Array.isArray(result.quiz)).toBe(true);
+  });
+
+  it('rejects quiz with fewer than 2 options', () => {
+    expect(() =>
+      SkillMetadataSchema.parse({
+        name: 'bad-quiz',
+        description: 'test',
+        quiz: {
+          questions: [
+            { question: 'Q?', options: [{ label: 'Only one' }] },
+          ],
+        },
+      }),
+    ).toThrow();
+  });
+
+  it('rejects quiz with no questions', () => {
+    expect(() =>
+      SkillMetadataSchema.parse({
+        name: 'empty-quiz',
+        description: 'test',
+        quiz: { questions: [] },
+      }),
+    ).toThrow();
+  });
+
   // === Passthrough unknown fields ===
 
   it('passes through unknown fields', () => {
