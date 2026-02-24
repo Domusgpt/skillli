@@ -10,8 +10,8 @@ skillli is an npm package that provides a complete ecosystem for managing agenti
 
 ## Features
 
-- **Skill Format Spec** — Standard SKILL.md format with YAML frontmatter for defining AI agent skills
-- **CLI** — `skillli init`, `search`, `install`, `publish`, `rate`, `trawl`, and more
+- **Open Standard** — Follows the [Agent Skills spec](https://agentskills.io/specification) (26+ platforms)
+- **CLI** — `skillli init`, `search`, `install`, `publish`, `validate`, `rate`, `trawl`, and more
 - **MCP Server** — Native Claude Code integration via Model Context Protocol
 - **Agentic Trawler** — Search across the registry, GitHub, and npm for relevant skills
 - **Safeguards** — Trust scoring, prohibited pattern detection, size limits, checksum verification
@@ -26,6 +26,9 @@ npm install -g skillli
 # Create a new skill
 skillli init my-skill
 
+# Validate a SKILL.md
+skillli validate ./my-skill
+
 # Search for skills
 skillli search "code review"
 
@@ -35,6 +38,58 @@ skillli install code-reviewer --link
 # Trawl across multiple sources
 skillli trawl "kubernetes deployment"
 ```
+
+## Skill Format
+
+Skills follow the [Agent Skills open standard](https://agentskills.io/specification).
+Only `name` and `description` are required:
+
+```yaml
+---
+name: my-skill
+description: A clear description of when and how to use this skill
+---
+
+# My Skill
+
+Instructions that Claude follows when this skill is invoked...
+```
+
+### Full example with skillli registry fields
+
+```yaml
+---
+name: my-skill
+description: A clear description of when and how to use this skill
+license: MIT
+metadata:
+  version: "1.0.0"
+  author: "your-github-username"
+  tags: "typescript, testing"
+  category: "development"
+user-invocable: true
+---
+
+# My Skill
+
+Instructions that Claude follows when this skill is invoked...
+```
+
+Registry fields (`version`, `author`, `tags`, `category`) can go in the `metadata`
+block (spec-compliant) or as top-level fields (convenience). See
+[references/skill-format-spec.md](.claude/skills/skillli/references/skill-format-spec.md)
+for the full specification covering all three layers: open standard, Claude Code
+extensions, and skillli registry extensions.
+
+### Categories
+
+`development` | `creative` | `enterprise` | `data` | `devops` | `other`
+
+### Trust Levels
+
+- **community** — Published by any user, basic validation
+- **verified** — Author identity verified, additional review
+- **official** — Maintained by the skillli team
 
 ## CLI Commands
 
@@ -46,6 +101,7 @@ skillli trawl "kubernetes deployment"
 | `skillli uninstall <skill>` | Uninstall a skill |
 | `skillli info <skill>` | Show skill details |
 | `skillli list` | List installed skills |
+| `skillli validate [path]` | Validate a SKILL.md without publishing |
 | `skillli rate <skill> <1-5>` | Rate a skill |
 | `skillli update` | Sync registry index |
 | `skillli publish [path]` | Publish a skill |
@@ -79,38 +135,6 @@ skillli includes a built-in MCP server for Claude Code integration:
 - `skillli://installed` — List of installed skills
 - `skillli://index` — Full registry index
 
-## Skill Format
-
-Skills are defined as SKILL.md files with YAML frontmatter:
-
-```yaml
----
-name: my-skill
-version: 1.0.0
-description: A clear description of what this skill does
-author: your-github-username
-license: MIT
-tags: [typescript, testing]
-category: development
-trust-level: community
-user-invocable: true
----
-
-# My Skill
-
-Instructions that Claude follows when this skill is invoked...
-```
-
-### Categories
-
-`development` | `creative` | `enterprise` | `data` | `devops` | `other`
-
-### Trust Levels
-
-- **community** — Published by any user, basic validation
-- **verified** — Author identity verified, additional review
-- **official** — Maintained by the skillli team
-
 ## Safeguards
 
 skillli runs safety checks on all skills:
@@ -118,7 +142,7 @@ skillli runs safety checks on all skills:
 1. Schema validation (Zod)
 2. File size limits (5MB total, 500 lines for SKILL.md)
 3. Prohibited pattern scanning (eval, exec, credentials, etc.)
-4. Script allowlisting (.sh, .py, .js only)
+4. Script allowlisting (.sh, .py, .js, .ts only)
 5. Checksum verification
 6. Trust score computation (0-100)
 

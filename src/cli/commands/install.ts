@@ -25,7 +25,8 @@ export function registerInstallCommand(program: Command): void {
           } else {
             installed = await installFromRegistry(skill);
           }
-          spinner.succeed(`Installed ${chalk.cyan(installed.name)} v${installed.version}`);
+          const ver = installed.version ? ` v${installed.version}` : '';
+          spinner.succeed(`Installed ${chalk.cyan(installed.name)}${ver}`);
           console.log(`  Path: ${installed.path}`);
 
           if (options.link) {

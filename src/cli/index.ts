@@ -12,6 +12,7 @@ import { registerRateCommand } from './commands/rate.js';
 import { registerUpdateCommand } from './commands/update.js';
 import { registerPublishCommand } from './commands/publish.js';
 import { registerTrawlCommand } from './commands/trawl.js';
+import { registerValidateCommand } from './commands/validate.js';
 
 const program = new Command();
 
@@ -30,5 +31,6 @@ registerRateCommand(program);
 registerUpdateCommand(program);
 registerPublishCommand(program);
 registerTrawlCommand(program);
+registerValidateCommand(program);
 
 program.parse();

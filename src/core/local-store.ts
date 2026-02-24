@@ -41,8 +41,15 @@ export async function getConfig(): Promise<LocalConfig> {
     await saveConfig(config);
     return config;
   }
-  const raw = await readFile(CONFIG_PATH, 'utf-8');
-  return JSON.parse(raw) as LocalConfig;
+  try {
+    const raw = await readFile(CONFIG_PATH, 'utf-8');
+    return JSON.parse(raw) as LocalConfig;
+  } catch {
+    // Corrupted config — reset to defaults
+    const config = defaultConfig();
+    await saveConfig(config);
+    return config;
+  }
 }
 
 export async function saveConfig(config: LocalConfig): Promise<void> {
@@ -57,8 +64,15 @@ export async function getLocalIndex(): Promise<LocalIndex> {
     await saveLocalIndex(index);
     return index;
   }
-  const raw = await readFile(LOCAL_INDEX_PATH, 'utf-8');
-  return JSON.parse(raw) as LocalIndex;
+  try {
+    const raw = await readFile(LOCAL_INDEX_PATH, 'utf-8');
+    return JSON.parse(raw) as LocalIndex;
+  } catch {
+    // Corrupted index — reset to defaults
+    const index = defaultIndex();
+    await saveLocalIndex(index);
+    return index;
+  }
 }
 
 export async function saveLocalIndex(index: LocalIndex): Promise<void> {
