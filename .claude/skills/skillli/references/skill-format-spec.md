@@ -1,11 +1,31 @@
 # Skill Format Specification
 
-This document describes the SKILL.md format as implemented by skillli. It covers
-three layers: the **Agent Skills Open Standard**, **Claude Code Extensions**, and
-**Skillli Registry Extensions**.
+This document is the authoritative reference for the SKILL.md format as implemented
+by skillli. It covers five layers:
+
+1. **Agent Skills Open Standard** — Portable across 26+ agent platforms
+2. **Claude Code Extensions** — Claude Code-specific behavior and lifecycle
+3. **Skillli Registry Extensions** — Indexing, search, trust scoring, package management
+4. **Interactive / Branching Skills** — Experimental quiz gates for context ingestion
+5. **Decentralized Discovery** — `.well-known/skills/` endpoint publishing
 
 Reference: [agentskills.io/specification](https://agentskills.io/specification) |
 [code.claude.com/docs/en/skills](https://code.claude.com/docs/en/skills)
+
+### Table of Contents
+
+- [SKILL.md Structure](#skillmd-structure)
+- [Layer 1: Agent Skills Open Standard](#layer-1-agent-skills-open-standard)
+- [Layer 2: Claude Code Extensions](#layer-2-claude-code-extensions)
+- [Layer 3: Skillli Registry Extensions](#layer-3-skillli-registry-extensions)
+- [Trust Levels](#trust-levels)
+- [Categories](#categories)
+- [Progressive Disclosure](#progressive-disclosure)
+- [Layer 4: Interactive / Branching Skills](#layer-4-interactive--branching-skills-experimental)
+- [Decentralized Discovery: .well-known/skills/](#decentralized-discovery-well-knownskills)
+- [Copy-Paste Templates](#copy-paste-templates)
+- [Naming Conventions](#naming-conventions)
+- [YAML Authoring Notes](#yaml-authoring-notes)
 
 ---
 
@@ -458,3 +478,71 @@ Auth: Bearer token in Authorization header.
 2. Initialize the SDK client
 3. Test with a health check endpoint
 ```
+
+---
+
+## Naming Conventions
+
+### Skill Names
+- 1-64 characters
+- Lowercase alphanumeric and hyphens only: `[a-z0-9-]`
+- No leading, trailing, or consecutive hyphens
+- Must match the directory name
+- Becomes the `/slash-command` in Claude Code
+
+**Good**: `code-reviewer`, `api-client`, `k8s-deploy`, `a`
+**Bad**: `MySkill`, `-bad`, `bad-`, `my--skill`, `skill_name`
+
+### Frontmatter Field Names
+- Open standard and Claude Code fields use **kebab-case** in YAML: `argument-hint`, `allowed-tools`, `user-invocable`, `disable-model-invocation`
+- Skillli registry fields also use **kebab-case** in YAML: `trust-level`, `min-skillli-version`
+- The parser normalizes all kebab-case fields to **camelCase** in TypeScript: `argumentHint`, `allowedTools`, `userInvocable`, `trustLevel`
+
+### Tag Conventions
+- Use lowercase
+- Prefer established terms: `typescript` not `ts`, `kubernetes` not `k8s`
+- 1-20 tags per skill, each 1-50 characters
+- Can be YAML array or comma-separated string
+
+---
+
+## YAML Authoring Notes
+
+### Strings That Need Quoting
+YAML has gotchas with certain values. Quote these:
+
+```yaml
+# Version numbers — YAML interprets 1.0 as a float, not "1.0"
+version: "1.0.0"    # correct
+version: 1.0.0      # wrong — YAML parses as float 1.0
+
+# Descriptions with colons
+description: "Setup: configure the API client"  # correct
+description: Setup: configure the API client     # wrong — YAML parsing error
+
+# Tags as CSV string
+tags: "typescript, testing, ci"  # correct
+tags: typescript, testing, ci    # wrong — YAML parsing error
+```
+
+### Multiline Descriptions
+Use YAML block scalar if your description is long:
+
+```yaml
+description: >-
+  Helps developers set up authentication for the Stripe API
+  including webhook configuration and key management
+```
+
+### Boolean Fields
+YAML accepts multiple boolean forms. Prefer `true`/`false`:
+
+```yaml
+gate: true           # preferred
+gate: yes            # works but less clear
+gate: on             # works but less clear
+```
+
+### Null vs Missing
+Omitting a field entirely is the same as setting it to null. The parser treats
+both as "not provided" and applies the appropriate default.

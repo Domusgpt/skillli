@@ -13,16 +13,21 @@ export function registerTrawlCommand(program: Command): void {
       ['registry', 'github'],
     )
     .option('-n, --max-results <n>', 'Maximum results', parseInt)
+    .option(
+      '-d, --domains <domains...>',
+      'Probe domains for .well-known/skills/ discovery',
+    )
     .action(
       async (
         query: string,
-        options: { sources: string[]; maxResults?: number },
+        options: { sources: string[]; maxResults?: number; domains?: string[] },
       ) => {
         const spinner = ora('Trawling for skills...').start();
         try {
           const results = await trawl(query, {
             sources: options.sources as ('registry' | 'github' | 'npm')[],
             maxResults: options.maxResults,
+            domains: options.domains,
           });
           spinner.stop();
 
