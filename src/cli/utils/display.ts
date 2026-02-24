@@ -26,30 +26,37 @@ export function displaySearchResults(results: SearchResult[]): void {
 
   console.log(chalk.bold(`\nFound ${results.length} skill(s):\n`));
 
-  for (const { skill, relevanceScore, matchedOn } of results) {
+  for (const { skill } of results) {
     const badge = trustBadge(skill.trustLevel);
     const rating = stars(skill.rating);
-    console.log(
-      `  ${chalk.cyan.bold(skill.name)} ${chalk.gray('v' + skill.version)} ${badge}`,
-    );
+    const version = skill.version ? chalk.gray('v' + skill.version) + ' ' : '';
+    console.log(`  ${chalk.cyan.bold(skill.name)} ${version}${badge}`);
     console.log(`    ${skill.description}`);
-    console.log(
-      `    ${rating} ${chalk.gray(`| ${skill.downloads} downloads | by ${skill.author}`)}`,
-    );
-    console.log(
-      `    ${chalk.gray('Tags:')} ${skill.tags.map((t) => chalk.magenta(t)).join(', ')}`,
-    );
+    const author = skill.author ? ` | by ${skill.author}` : '';
+    console.log(`    ${rating} ${chalk.gray(`| ${skill.downloads} downloads${author}`)}`);
+    if (skill.tags?.length) {
+      console.log(
+        `    ${chalk.gray('Tags:')} ${skill.tags.map((t) => chalk.magenta(t)).join(', ')}`,
+      );
+    }
     console.log();
   }
 }
 
 export function displaySkillInfo(skill: RegistryEntry): void {
-  console.log(chalk.bold.cyan(`\n  ${skill.name}`) + chalk.gray(` v${skill.version}`));
+  const version = skill.version ? chalk.gray(` v${skill.version}`) : '';
+  console.log(chalk.bold.cyan(`\n  ${skill.name}`) + version);
   console.log(`  ${trustBadge(skill.trustLevel)}\n`);
   console.log(`  ${skill.description}\n`);
-  console.log(`  ${chalk.bold('Author:')}     ${skill.author}`);
-  console.log(`  ${chalk.bold('Category:')}   ${skill.category}`);
-  console.log(`  ${chalk.bold('Tags:')}       ${skill.tags.join(', ')}`);
+  if (skill.author) {
+    console.log(`  ${chalk.bold('Author:')}     ${skill.author}`);
+  }
+  if (skill.category) {
+    console.log(`  ${chalk.bold('Category:')}   ${skill.category}`);
+  }
+  if (skill.tags?.length) {
+    console.log(`  ${chalk.bold('Tags:')}       ${skill.tags.join(', ')}`);
+  }
   console.log(`  ${chalk.bold('Rating:')}     ${stars(skill.rating)} (${skill.rating.count} ratings)`);
   console.log(`  ${chalk.bold('Downloads:')}  ${skill.downloads}`);
   if (skill.repository) {
@@ -87,8 +94,9 @@ export function displayInstalledSkills(skills: InstalledSkill[]): void {
   }
   console.log(chalk.bold(`\nInstalled skills (${skills.length}):\n`));
   for (const skill of skills) {
+    const version = skill.version ? chalk.gray('v' + skill.version) + ' ' : '';
     console.log(
-      `  ${chalk.cyan.bold(skill.name)} ${chalk.gray('v' + skill.version)} ${chalk.gray(`(${skill.source})`)}`,
+      `  ${chalk.cyan.bold(skill.name)} ${version}${chalk.gray(`(${skill.source})`)}`,
     );
     console.log(`    Installed: ${skill.installedAt}`);
     console.log(`    Path: ${skill.path}`);

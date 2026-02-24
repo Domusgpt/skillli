@@ -23,6 +23,18 @@ describe('parseSkillFile', () => {
       parseSkillFile(join(FIXTURES, 'invalid-skill', 'SKILL.md')),
     ).rejects.toThrow(SkillValidationError);
   });
+
+  it('parses a minimal SKILL.md with only name + description', async () => {
+    const skill = await parseSkillFile(join(FIXTURES, 'minimal-skill', 'SKILL.md'));
+    expect(skill.metadata.name).toBe('minimal-skill');
+    expect(skill.metadata.description).toBe('A minimal skill with only the required fields');
+    expect(skill.metadata.version).toBeUndefined();
+    expect(skill.metadata.author).toBeUndefined();
+    expect(skill.metadata.tags).toBeUndefined();
+    expect(skill.metadata.category).toBeUndefined();
+    expect(skill.metadata.trustLevel).toBe('community');
+    expect(skill.content).toContain('# Minimal Skill');
+  });
 });
 
 describe('parseSkillContent', () => {

@@ -50,6 +50,22 @@ describe('search', () => {
     const results = search(sampleIndex, { query: 'api-designer' });
     expect(results[0].skill.name).toBe('api-designer');
   });
+
+  it('handles skills with no tags, author, or category', () => {
+    const results = search(sampleIndex, { query: 'minimal' });
+    expect(results.length).toBeGreaterThan(0);
+    const minimal = results.find((r) => r.skill.name === 'minimal-skill');
+    expect(minimal).toBeDefined();
+    expect(minimal!.skill.tags).toBeUndefined();
+    expect(minimal!.skill.author).toBeUndefined();
+    expect(minimal!.skill.category).toBeUndefined();
+  });
+
+  it('does not crash when filtering by category with minimal skills', () => {
+    const results = search(sampleIndex, { query: 'skill', category: 'development' });
+    // Should not include minimal-skill (no category)
+    expect(results.every((r) => r.skill.category === 'development')).toBe(true);
+  });
 });
 
 describe('searchByTags', () => {

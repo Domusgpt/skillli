@@ -75,18 +75,19 @@ export interface RatingSubmission {
 
 export interface RegistryEntry {
   name: string;
-  version: string;
   description: string;
-  author: string;
-  tags: string[];
-  category: SkillCategory;
-  repository: string;
   trustLevel: TrustLevel;
   downloads: number;
   rating: RatingInfo;
   publishedAt: string;
   updatedAt: string;
-  checksum: string;
+  // Optional per open standard — registry populates defaults but not guaranteed
+  version?: string;
+  author?: string;
+  tags?: string[];
+  category?: SkillCategory;
+  repository?: string;
+  checksum?: string;
 }
 
 // === Local Store ===

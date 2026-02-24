@@ -76,6 +76,15 @@
       "publishedAt": "2026-01-10T00:00:00Z",
       "updatedAt": "2026-02-20T00:00:00Z",
       "checksum": "sha256:mno345"
+    },
+    "minimal-skill": {
+      "name": "minimal-skill",
+      "description": "A minimal skill with only required fields to test defensive handling",
+      "trustLevel": "community",
+      "downloads": 10,
+      "rating": { "average": 3.0, "count": 2, "distribution": [0, 1, 0, 1, 0] },
+      "publishedAt": "2026-02-24T00:00:00Z",
+      "updatedAt": "2026-02-24T00:00:00Z"
     }
   }
 }

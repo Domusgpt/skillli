@@ -50,8 +50,9 @@ function scoreSkill(
   }
 
   // Tag match (very high weight)
+  const entryTags = entry.tags ?? [];
   for (const token of queryTokens) {
-    if (entry.tags.some((t) => t.toLowerCase() === token)) {
+    if (entryTags.some((t) => t.toLowerCase() === token)) {
       score += 4;
       if (!matchedOn.includes('tags')) matchedOn.push('tags');
     }
@@ -60,7 +61,7 @@ function scoreSkill(
   // Filter-matched tags from options
   if (options.tags) {
     for (const tag of options.tags) {
-      if (entry.tags.includes(tag)) {
+      if (entryTags.includes(tag)) {
         score += 3;
         if (!matchedOn.includes('tags')) matchedOn.push('tags');
       }

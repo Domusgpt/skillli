@@ -49,8 +49,19 @@ describe('computeTrustScore', () => {
   it('computes score for a valid skill', async () => {
     const skill = await parseSkillFile(join(FIXTURES, 'valid-skill', 'SKILL.md'));
     const score = computeTrustScore(skill);
-    // Has license (+10), passes checks (+35) = 45 minimum
-    expect(score).toBeGreaterThanOrEqual(25);
+    // Has license (+10), version (+5), author (+5), passes checks (+35) = 55
+    expect(score).toBeGreaterThanOrEqual(35);
     expect(score).toBeLessThanOrEqual(100);
+  });
+
+  it('computes lower score for a minimal skill', async () => {
+    const skill = await parseSkillFile(join(FIXTURES, 'minimal-skill', 'SKILL.md'));
+    const score = computeTrustScore(skill);
+    // No license, no version, no author, no repo — only passes checks (+35)
+    expect(score).toBeGreaterThanOrEqual(20);
+    expect(score).toBeLessThanOrEqual(100);
+    // Should be lower than valid-skill which has more fields
+    const fullSkill = await parseSkillFile(join(FIXTURES, 'valid-skill', 'SKILL.md'));
+    expect(score).toBeLessThan(computeTrustScore(fullSkill));
   });
 });

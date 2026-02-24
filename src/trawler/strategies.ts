@@ -7,7 +7,7 @@ export async function searchRegistry(query: string): Promise<TrawlResult[]> {
   const results: TrawlResult[] = [];
 
   for (const entry of Object.values(index.skills)) {
-    const text = `${entry.name} ${entry.description} ${entry.tags.join(' ')}`.toLowerCase();
+    const text = `${entry.name} ${entry.description} ${(entry.tags ?? []).join(' ')}`.toLowerCase();
     const matchCount = tokens.filter((t) => text.includes(t)).length;
     if (matchCount === 0) continue;
 

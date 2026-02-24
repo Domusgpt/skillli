@@ -41,7 +41,9 @@ export function createSkillliMcpServer(): McpServer {
         : results
             .map((r) => {
               const s = r.skill;
-              return `**${s.name}** v${s.version} [${s.trustLevel.toUpperCase()}]\n  ${s.description}\n  Rating: ${s.rating.average}/5 (${s.rating.count}) | Downloads: ${s.downloads}\n  Tags: ${s.tags.join(', ')}`;
+              const ver = s.version ? ` v${s.version}` : '';
+              const tags = s.tags?.length ? `\n  Tags: ${s.tags.join(', ')}` : '';
+              return `**${s.name}**${ver} [${s.trustLevel.toUpperCase()}]\n  ${s.description}\n  Rating: ${s.rating.average}/5 (${s.rating.count}) | Downloads: ${s.downloads}${tags}`;
             })
             .join('\n\n');
 
@@ -80,12 +82,13 @@ export function createSkillliMcpServer(): McpServer {
     async ({ name }) => {
       try {
         const entry = await getSkillEntry(name);
+        const ver = entry.version ? ` v${entry.version}` : '';
         const text = [
-          `**${entry.name}** v${entry.version} [${entry.trustLevel.toUpperCase()}]`,
-          `${entry.description}`,
-          `Author: ${entry.author}`,
-          `Category: ${entry.category}`,
-          `Tags: ${entry.tags.join(', ')}`,
+          `**${entry.name}**${ver} [${entry.trustLevel.toUpperCase()}]`,
+          entry.description,
+          entry.author ? `Author: ${entry.author}` : null,
+          entry.category ? `Category: ${entry.category}` : null,
+          entry.tags?.length ? `Tags: ${entry.tags.join(', ')}` : null,
           `Rating: ${entry.rating.average}/5 (${entry.rating.count} ratings)`,
           `Downloads: ${entry.downloads}`,
           entry.repository ? `Repository: ${entry.repository}` : null,
