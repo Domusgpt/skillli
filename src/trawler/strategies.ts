@@ -28,9 +28,13 @@ export async function searchGithub(query: string): Promise<TrawlResult[]> {
   const url = `https://api.github.com/search/repositories?q=${searchQuery}&per_page=10`;
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
     const res = await fetch(url, {
       headers: { Accept: 'application/vnd.github.v3+json' },
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
     if (!res.ok) return results;
 
     const data = (await res.json()) as {
@@ -75,7 +79,10 @@ export async function searchNpm(query: string): Promise<TrawlResult[]> {
   const url = `https://registry.npmjs.org/-/v1/search?text=${searchQuery}&size=10`;
 
   try {
-    const res = await fetch(url);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
     if (!res.ok) return results;
 
     const data = (await res.json()) as {

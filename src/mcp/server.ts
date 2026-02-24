@@ -61,14 +61,16 @@ export function createSkillliMcpServer(): McpServer {
     async ({ name, link }) => {
       try {
         const installed = await installFromRegistry(name);
-        let text = `Installed ${installed.name} v${installed.version} at ${installed.path}`;
+        const ver = installed.version ? ` v${installed.version}` : '';
+        let text = `Installed ${installed.name}${ver} at ${installed.path}`;
         if (link) {
           const linkPath = await linkToClaudeSkills(installed);
           text += `\nLinked to ${linkPath}`;
         }
         return { content: [{ type: 'text' as const, text }] };
       } catch (error) {
-        return { content: [{ type: 'text' as const, text: `Install failed: ${error}` }], isError: true };
+        const msg = error instanceof Error ? error.message : String(error);
+        return { content: [{ type: 'text' as const, text: `Install failed: ${msg}` }], isError: true };
       }
     },
   );
@@ -99,7 +101,8 @@ export function createSkillliMcpServer(): McpServer {
           .join('\n');
         return { content: [{ type: 'text' as const, text }] };
       } catch (error) {
-        return { content: [{ type: 'text' as const, text: `Error: ${error}` }], isError: true };
+        const msg = error instanceof Error ? error.message : String(error);
+        return { content: [{ type: 'text' as const, text: `Error: ${msg}` }], isError: true };
       }
     },
   );
@@ -149,7 +152,8 @@ export function createSkillliMcpServer(): McpServer {
           ],
         };
       } catch (error) {
-        return { content: [{ type: 'text' as const, text: `Rating failed: ${error}` }], isError: true };
+        const msg = error instanceof Error ? error.message : String(error);
+        return { content: [{ type: 'text' as const, text: `Rating failed: ${msg}` }], isError: true };
       }
     },
   );

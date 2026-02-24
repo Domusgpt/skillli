@@ -104,11 +104,22 @@ export async function installFromLocal(dirPath: string): Promise<InstalledSkill>
   return installed;
 }
 
-export async function uninstall(name: string): Promise<void> {
+export async function uninstall(
+  name: string,
+  projectDir = process.cwd(),
+): Promise<void> {
+  // Remove the installed skill
   const installPath = join(SKILLS_DIR, name);
   if (existsSync(installPath)) {
     await rm(installPath, { recursive: true });
   }
+
+  // Remove any symlink in .claude/skills/
+  const linkPath = join(projectDir, '.claude', 'skills', name);
+  if (existsSync(linkPath)) {
+    await rm(linkPath, { recursive: true });
+  }
+
   await markUninstalled(name);
 }
 

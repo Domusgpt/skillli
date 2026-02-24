@@ -6,15 +6,16 @@ export type {
   SearchOptions,
   SearchResult,
   RatingInfo,
+  RatingSubmission,
   SafeguardResult,
+  SafeguardCheck,
   TrawlResult,
+  TrawlOptions,
   InstalledSkill,
   LocalConfig,
   LocalIndex,
   SkillCategory,
   TrustLevel,
-  SafeguardCheck,
-  TrawlOptions,
 } from './core/types.js';
 
 // Parser
